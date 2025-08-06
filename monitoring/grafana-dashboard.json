@@ -1,0 +1,137 @@
+{
+    "dashboard": {
+        "id": null,
+        "title": "AttendKal API Monitoring",
+        "tags": [
+            "attendkal",
+            "api",
+            "nodejs"
+        ],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+            {
+                "id": 1,
+                "title": "API Request Rate",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "rate(http_requests_total[5m])",
+                        "legendFormat": "Requests/sec"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "reqps",
+                        "thresholds": {
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 50
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 100
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "title": "Response Time",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+                        "legendFormat": "95th percentile"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+                        "legendFormat": "50th percentile"
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Error Rate",
+                "type": "singlestat",
+                "targets": [
+                    {
+                        "expr": "rate(http_requests_total{status_code=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100",
+                        "legendFormat": "Error %"
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Database Query Performance",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m]))",
+                        "legendFormat": "{{operation}} - {{table}}"
+                    }
+                ]
+            },
+            {
+                "id": 5,
+                "title": "Active Users",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "active_connections",
+                        "legendFormat": "Active Connections"
+                    }
+                ]
+            },
+            {
+                "id": 6,
+                "title": "Memory Usage",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "process_resident_memory_bytes",
+                        "legendFormat": "RSS Memory"
+                    },
+                    {
+                        "expr": "nodejs_heap_size_used_bytes",
+                        "legendFormat": "Heap Used"
+                    }
+                ]
+            },
+            {
+                "id": 7,
+                "title": "Authentication Metrics",
+                "type": "table",
+                "targets": [
+                    {
+                        "expr": "authentication_attempts_total",
+                        "legendFormat": "{{status}} - {{method}}"
+                    }
+                ]
+            },
+            {
+                "id": 8,
+                "title": "Attendance Activities",
+                "type": "piechart",
+                "targets": [
+                    {
+                        "expr": "attendance_records_total",
+                        "legendFormat": "{{status}}"
+                    }
+                ]
+            }
+        ],
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "refresh": "10s"
+    }
+}

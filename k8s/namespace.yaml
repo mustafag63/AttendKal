@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: attendkal
+  labels:
+    name: attendkal
+    environment: production
+    app: attendkal 

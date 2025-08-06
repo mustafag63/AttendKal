@@ -1,0 +1,73 @@
+{
+    "page_rules": [
+        {
+            "name": "API Cache Rules",
+            "pattern": "api.attendkal.com/api/*",
+            "settings": {
+                "cache_level": "bypass",
+                "security_level": "high",
+                "ssl": "strict",
+                "always_use_https": true
+            }
+        },
+        {
+            "name": "Static Assets Cache",
+            "pattern": "cdn.attendkal.com/*",
+            "settings": {
+                "cache_level": "aggressive",
+                "edge_cache_ttl": 2592000,
+                "browser_cache_ttl": 604800,
+                "always_use_https": true
+            }
+        },
+        {
+            "name": "Health Checks - No Cache",
+            "pattern": "api.attendkal.com/health*",
+            "settings": {
+                "cache_level": "bypass",
+                "security_level": "medium"
+            }
+        },
+        {
+            "name": "API Documentation",
+            "pattern": "api.attendkal.com/api-docs*",
+            "settings": {
+                "cache_level": "standard",
+                "edge_cache_ttl": 3600,
+                "always_use_https": true
+            }
+        }
+    ],
+    "firewall_rules": [
+        {
+            "name": "Rate Limiting - API",
+            "expression": "(http.request.uri.path contains \"/api/\")",
+            "action": "challenge",
+            "rate_limit": {
+                "threshold": 100,
+                "period": 60,
+                "action": "challenge"
+            }
+        },
+        {
+            "name": "Block Suspicious Patterns",
+            "expression": "(http.request.uri.query contains \"union\" or http.request.uri.query contains \"select\" or http.request.uri.query contains \"<script\")",
+            "action": "block"
+        },
+        {
+            "name": "Allow Health Checks",
+            "expression": "(http.request.uri.path eq \"/health\")",
+            "action": "allow"
+        }
+    ],
+    "worker_routes": [
+        {
+            "pattern": "api.attendkal.com/api/upload/*",
+            "script": "file-upload-processor"
+        },
+        {
+            "pattern": "api.attendkal.com/api/reports/*",
+            "script": "report-generator"
+        }
+    ]
+}
