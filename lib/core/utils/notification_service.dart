@@ -2,27 +2,28 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../config/app_config.dart';
 
+/// Handles local and FCM notifications
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
 
+  /// Initialize timezone data, local notifications, and FCM
   static Future<void> initialize() async {
-    // Initialize local notifications
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    // Initialize timezone database and set local timezone
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
 
+    // Local notification settings
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -38,7 +39,7 @@ class NotificationService {
       await _createNotificationChannel();
     }
 
-    // Initialize Firebase Messaging
+    // FCM setup
     await _initializeFirebaseMessaging();
   }
 
@@ -52,19 +53,14 @@ class NotificationService {
 
     await _notifications
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
   }
 
   static Future<void> _initializeFirebaseMessaging() async {
-    // Request permission for iOS
-    NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    // Request iOS permissions
+    NotificationSettings settings =
+        await _firebaseMessaging.requestPermission();
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('User granted permission');
@@ -75,29 +71,27 @@ class NotificationService {
       print('User declined or has not accepted permission');
     }
 
-    // Get FCM token
+    // Print FCM token
     String? token = await _firebaseMessaging.getToken();
     print('FCM Token: $token');
 
-    // Handle foreground messages
+    // Foreground message handler
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // Handle notification taps when app is in background
+    // Background tap handler
     FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundTap);
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
-    // Handle local notification tap
     print('Notification tapped: ${response.payload}');
+    // Navigate or handle action
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
     print('Foreground message: ${message.notification?.title}');
-
-    // Show local notification when app is in foreground
     if (message.notification != null) {
       showNotification(
-        title: message.notification!.title ?? 'AttendKal',
+        title: message.notification!.title ?? AppConfig.appName,
         body: message.notification!.body ?? '',
         payload: message.data.toString(),
       );
@@ -106,14 +100,16 @@ class NotificationService {
 
   static void _handleBackgroundTap(RemoteMessage message) {
     print('Background notification tapped: ${message.notification?.title}');
-    // Handle navigation based on message data
+    // Navigate or handle action based on message.data
   }
 
+  /// Show an immediate local notification
   static Future<void> showNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
+    final id = DateTime.now().microsecondsSinceEpoch % 100000;
     const androidDetails = AndroidNotificationDetails(
       AppConfig.notificationChannelId,
       AppConfig.notificationChannelName,
@@ -121,33 +117,23 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
+    const iosDetails = DarwinNotificationDetails();
     const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      details,
-      payload: payload,
-    );
+    await _notifications.show(id, title, body, details, payload: payload);
   }
 
+  /// Schedule a notification at a specific [scheduledDate]
   static Future<void> scheduleNotification({
     required String title,
     required String body,
     required DateTime scheduledDate,
     String? payload,
   }) async {
+    final id = DateTime.now().microsecondsSinceEpoch % 100000;
     const androidDetails = AndroidNotificationDetails(
       AppConfig.notificationChannelId,
       AppConfig.notificationChannelName,
@@ -155,20 +141,14 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
+    const iosDetails = DarwinNotificationDetails();
     const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
     await _notifications.zonedSchedule(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      id,
       title,
       body,
       tz.TZDateTime.from(scheduledDate, tz.local),
@@ -176,12 +156,15 @@ class NotificationService {
       payload: payload,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.dateAndTime,
     );
   }
 
+  /// Retrieve the current FCM token
   static Future<String?> getFCMToken() async {
-    return await _firebaseMessaging.getToken();
+    return _firebaseMessaging.getToken();
   }
 
+  /// Stream for token refresh events
   static Stream<String> get onTokenRefresh => _firebaseMessaging.onTokenRefresh;
 }

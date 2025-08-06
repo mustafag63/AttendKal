@@ -1,36 +1,39 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# ios/Podfile
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+require 'fileutils'
+
+platform :ios, '13.0'   # veya projenizin ihtiyaç duyduğu minimum sürüm
+
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
-  'Debug' => :debug,
+  'Debug'   => :debug,
   'Profile' => :release,
   'Release' => :release,
 }
 
+# Flutter build settings yolunu doğru konumdan oku
 def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  # Podfile ile aynı dizindeki Flutter/Generated.xcconfig dosyasını kontrol et
+  generated_xcode_build_settings_path = File.expand_path(File.join(__dir__, 'Flutter', 'Generated.xcconfig'))
   unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+    raise "#{generated_xcode_build_settings_path} must exist. Run 'flutter pub get' and ensure ios/Flutter/Generated.xcconfig is present"
   end
-
   File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/FLUTTER_ROOT\=(.*)/)
-    return matches[1].strip if matches
+    if line =~ /FLUTTER_ROOT\=(.*)/
+      return Regexp.last_match(1).strip
+    end
   end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}"
 end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-
 flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -39,5 +42,52 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    
+    # Firebase Messaging modül hatası için build ayarları
+    target.build_configurations.each do |config|
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      config.build_settings['DEFINES_MODULE'] = 'YES'
+    end
+
+    # --- BoringSSL-GRPC bayrak düzeltmesi ---
+    if target.name == 'BoringSSL-GRPC'
+      target.source_build_phase.files.each do |file|
+        next unless file.settings && file.settings['COMPILER_FLAGS']
+        flags = file.settings['COMPILER_FLAGS'].split
+        flags.reject! { |f| f == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+        file.settings['COMPILER_FLAGS'] = flags.join(' ')
+      end
+    end
+
+    # --- gRPC-Core header patch: remove 'template' keyword + izin düzeltmesi ---
+    if target.name == 'gRPC-Core'
+      pod_dir = installer.sandbox.pod_dir('gRPC-Core').to_s
+      header = File.join(pod_dir, 'src', 'core', 'lib', 'promise', 'detail', 'basic_seq.h')
+      if File.exist?(header)
+        # 1) Dosyayı yazılabilir yap
+        FileUtils.chmod('u+w', header)
+        # 2) İçeriği oku ve patch uygula
+        content = File.read(header)
+        patched = content.gsub('Traits::template CallSeqFactory', 'Traits::CallSeqFactory')
+        patched = patched.gsub('Traits::template CallSeqFactory<', 'Traits::CallSeqFactory<')
+        File.write(header, patched)
+        # 3) İzinleri eski haline döndür (isteğe bağlı)
+        FileUtils.chmod('u-w', header)
+      end
+    end
+
+    # --- gRPC-C++ header patch ---
+    if target.name == 'gRPC-C++'
+      pod_dir = installer.sandbox.pod_dir('gRPC-C++').to_s
+      header = File.join(pod_dir, 'src', 'core', 'lib', 'promise', 'detail', 'basic_seq.h')
+      if File.exist?(header)
+        FileUtils.chmod('u+w', header)
+        content = File.read(header)
+        patched = content.gsub('Traits::template CallSeqFactory', 'Traits::CallSeqFactory')
+        patched = patched.gsub('Traits::template CallSeqFactory<', 'Traits::CallSeqFactory<')
+        File.write(header, patched)
+        FileUtils.chmod('u-w', header)
+      end
+    end
   end
 end

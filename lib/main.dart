@@ -1,11 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import 'core/config/app_config.dart';
+import 'core/config/firebase_config.dart';
 import 'core/di/injection_container.dart';
 import 'core/network/api_client.dart';
 import 'core/routes/app_router.dart';
@@ -16,19 +15,11 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/courses/presentation/bloc/courses_bloc.dart';
 import 'features/subscription/presentation/bloc/subscription_bloc.dart';
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('Handling a background message: ${message.messageId}');
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp();
-
-  // Set up Firebase Messaging
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await FirebaseConfig.initializeFirebase();
 
   // Initialize dependency injection
   await initializeDependencies();

@@ -14,6 +14,7 @@ import '../../features/subscription/presentation/bloc/subscription_bloc.dart';
 import '../database/database_helper.dart';
 import '../network/api_client.dart';
 import '../network/network_info.dart';
+import '../services/firebase_service.dart';
 
 final sl = GetIt.instance;
 
@@ -31,6 +32,7 @@ Future<void> initializeDependencies() async {
     // Core
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton<ApiClient>(() => ApiClient());
+  sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
   
   // Blocs - using placeholder implementations
   _registerBlocs();

@@ -33,6 +33,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.859.0",
     "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
     "compression": "^1.7.4",
@@ -42,7 +43,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.4.1",
     "express-validator": "^7.2.0",
-    "helmet": "^8.0.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
@@ -66,5 +67,8 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "directories": {
+    "test": "tests"
   }
 }

@@ -17,23 +17,17 @@ class PrismaManager {
                 errorFormat: 'pretty',
             });
 
-            // Connection lifecycle events
-            this.client.$on('beforeExit', async () => {
-                logger.info('Prisma client disconnecting...');
-            });
+            // ❌ this.client.$on('beforeExit') kaldırıldı
 
             // Global error handling for database operations
             this.client.$use(async (params, next) => {
                 const before = Date.now();
-
                 try {
                     const result = await next(params);
                     const after = Date.now();
-
                     if (isDevelopment()) {
                         logger.debug(`Query ${params.model}.${params.action} took ${after - before}ms`);
                     }
-
                     return result;
                 } catch (error) {
                     logger.error(`Database error in ${params.model}.${params.action}:`, error);
@@ -74,6 +68,13 @@ export const prisma = prismaManager.getClient();
 export default prismaManager;
 
 // Graceful shutdown handling
+
+// beforeExit olayı artık burada
+process.on('beforeExit', async () => {
+    logger.info('Process beforeExit: disconnecting Prisma client...');
+    await prismaManager.disconnect();
+});
+
 process.on('SIGINT', async () => {
     logger.info('SIGINT received, disconnecting Prisma client...');
     await prismaManager.disconnect();
@@ -86,7 +87,6 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', async (error) => {
     logger.error('Uncaught exception:', error);
     await prismaManager.disconnect();
@@ -97,4 +97,4 @@ process.on('unhandledRejection', async (reason, promise) => {
     logger.error('Unhandled rejection at:', promise, 'reason:', reason);
     await prismaManager.disconnect();
     process.exit(1);
-}); 
+});
