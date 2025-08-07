@@ -26,7 +26,8 @@ import healthRoutes from './routes/healthRoutes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const DEFAULT_PORT = process.env.PORT || 3000;
+const MAX_PORT = DEFAULT_PORT + 10; // Try up to 10 ports
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
@@ -117,6 +118,7 @@ app.get('/api', (req, res) => {
         version: '1.0.0',
         documentation: '/api-docs',
         health: '/health',
+        port: req.get('host')?.split(':')[1] || DEFAULT_PORT,
         endpoints: {
             auth: '/api/auth',
             courses: '/api/courses',
@@ -131,46 +133,77 @@ app.get('/api', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    logger.info('SIGTERM signal received. Closing HTTP server...');
-    server.close(() => {
-        logger.info('HTTP server closed.');
-        process.exit(0);
-    });
-});
+let server;
 
-process.on('SIGINT', () => {
-    logger.info('SIGINT signal received. Closing HTTP server...');
-    server.close(() => {
-        logger.info('HTTP server closed.');
-        process.exit(0);
-    });
-});
+// Function to find available port
+const findAvailablePort = (startPort) => {
+    return new Promise((resolve, reject) => {
+        const testPort = (port) => {
+            if (port > MAX_PORT) {
+                reject(new Error(`No available port found between ${DEFAULT_PORT} and ${MAX_PORT}`));
+                return;
+            }
 
-// Start server
-const startServer = (port) => {
-    const server = app.listen(port, () => {
-        logger.info(`🚀 AttendKal API Server running on port ${port}`);
-        logger.info(`📚 Environment: ${process.env.NODE_ENV}`);
-        logger.info(`🔗 API URL: http://localhost:${port}/api`);
-        logger.info(`❤️  Health Check: http://localhost:${port}/health`);
-    });
+            const testServer = app.listen(port)
+                .on('listening', () => {
+                    testServer.close();
+                    resolve(port);
+                })
+                .on('error', (err) => {
+                    if (err.code === 'EADDRINUSE') {
+                        logger.warn(`Port ${port} is busy, trying port ${port + 1}...`);
+                        testPort(port + 1);
+                    } else {
+                        reject(err);
+                    }
+                });
+        };
 
-    server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            logger.warn(`Port ${port} is busy, trying port ${port + 1}...`);
-            server.close();
-            startServer(port + 1);
-        } else {
-            logger.error('Server error:', err);
-            process.exit(1);
-        }
+        testPort(startPort);
     });
-
-    return server;
 };
 
-const server = startServer(PORT);
+// Graceful shutdown
+const gracefulShutdown = (signal) => {
+    logger.info(`${signal} signal received. Closing HTTP server...`);
+    if (server) {
+        server.close(() => {
+            logger.info('HTTP server closed.');
+            process.exit(0);
+        });
+    } else {
+        process.exit(0);
+    }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Start server
+const startServer = async () => {
+    try {
+        const availablePort = await findAvailablePort(DEFAULT_PORT);
+
+        server = app.listen(availablePort, () => {
+            logger.info(`🚀 AttendKal API Server running on port ${availablePort}`);
+            logger.info(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
+            logger.info(`🔗 API URL: http://localhost:${availablePort}/api`);
+            logger.info(`❤️  Health Check: http://localhost:${availablePort}/health`);
+            logger.info(`📖 API Docs: http://localhost:${availablePort}/api-docs`);
+        });
+
+        server.on('error', (err) => {
+            logger.error('Server error:', err);
+            process.exit(1);
+        });
+
+    } catch (error) {
+        logger.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+// Start the server
+startServer();
 
 export default app; 

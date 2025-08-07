@@ -3,8 +3,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // Feature flags
-  static const bool subscriptionEnabled =
-      false; // Set to false for maintenance mode
+  static const bool subscriptionEnabled = true; // Enabled after fixing Firebase
   static const bool analyticsEnabled = true;
   static const bool notificationsEnabled = true;
 
@@ -29,6 +28,45 @@ class AppConfig {
   static const String isFirstLaunchKey = 'is_first_launch';
   static const String subscriptionTypeKey = 'subscription_type';
   static const String darkModeKey = 'dark_mode';
+
+  // API configuration - Dynamic port support
+  static const List<String> possibleBaseUrls = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004',
+  ];
+  static const String apiVersion = 'v1';
+
+  // Get available backend URL
+  static Future<String> getBackendUrl() async {
+    for (String url in possibleBaseUrls) {
+      try {
+        final uri = Uri.parse('$url/health');
+        final response = await Future.any([
+          _checkUrl(uri),
+          Future.delayed(const Duration(milliseconds: 500), () => false),
+        ]);
+        if (response == true) {
+          return url;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+    // Fallback to default
+    return possibleBaseUrls.first;
+  }
+
+  static Future<bool> _checkUrl(Uri uri) async {
+    try {
+      // Bu method network paketini kullanacak, şimdilik basit bir implementasyon
+      return true; // ApiClient'da implement edilecek
+    } catch (e) {
+      return false;
+    }
+  }
 
   // Maintenance messages
   static const String subscriptionMaintenanceMessage =

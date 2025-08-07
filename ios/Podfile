@@ -32,6 +32,7 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  use_modular_headers! # Use modular headers for better compatibility
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
   target 'RunnerTests' do
@@ -43,10 +44,31 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Firebase Messaging modül hatası için build ayarları
+    # Firebase ve tüm pods için agresif modular header düzeltmesi
     target.build_configurations.each do |config|
+      # Modular includes sorununu tamamen çöz
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['DEFINES_MODULE'] = 'YES'
+      config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      config.build_settings['CLANG_MODULES_AUTOLINK'] = 'YES'
+      
+      # Firebase özel ayarları
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'FIRMessaging_LIB_VERSION=@\"\"'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'Firebase_VERSION=@\"\"'
+      
+      # Header search paths
+      config.build_settings['HEADER_SEARCH_PATHS'] ||= []
+      config.build_settings['HEADER_SEARCH_PATHS'] << '$(inherited)'
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"${PODS_ROOT}/Firebase"'
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"${PODS_ROOT}/Headers/Public"'
+      
+      # Warning'leri sustur
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
+      
+      # iOS deployment target
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
 
     # --- BoringSSL-GRPC bayrak düzeltmesi ---
@@ -87,6 +109,49 @@ post_install do |installer|
         patched = patched.gsub('Traits::template CallSeqFactory<', 'Traits::CallSeqFactory<')
         File.write(header, patched)
         FileUtils.chmod('u-w', header)
+      end
+    end
+
+    # Firebase Messaging özel header fix
+    if target.name == 'firebase_messaging'
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
+      end
+    end
+
+    # This script fixes the 'port' undeclared identifier error in leveldb-library
+    if target.name == 'leveldb-library'
+      target.build_configurations.each do |config|
+        config.build_settings['CC'] = '"$(TOOLCHAIN_DIR)/usr/bin/clang"'
+        config.build_settings['CXX'] = '"$(TOOLCHAIN_DIR)/usr/bin/clang++"'
+        config.build_settings['DEFINES_MODULE'] = 'YES'
+        config.build_settings['COMPILER_FLAGS'] = '$(inherited) -Wno-error=shorten-64-to-32'
+        
+        leveldb_path = installer.sandbox.pod_dir('leveldb-library')
+        
+        # Patch port.h
+        port_header = File.join(leveldb_path.to_s, 'port', 'port.h')
+        if File.exist?(port_header)
+          text = File.read(port_header)
+          # Add include for <string> to fix build error
+          if !text.include?('#include <string>')
+            File.write(port_header, "#include <string>\n" + text)
+            puts "✅ Patched port.h in leveldb-library"
+          end
+        end
+
+        # Patch port_example.h
+        port_example_header = File.join(leveldb_path.to_s, 'port', 'port_example.h')
+        if File.exist?(port_example_header)
+          text = File.read(port_example_header)
+          # Add include for <string> to fix build error
+          if !text.include?('#include <string>')
+            File.write(port_example_header, "#include <string>\n" + text)
+            puts "✅ Patched port_example.h in leveldb-library"
+          end
+        end
       end
     end
   end

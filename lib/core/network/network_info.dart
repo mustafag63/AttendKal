@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 abstract class NetworkInfo {
   Future<bool> get isConnected;
-  Stream<ConnectivityResult> get connectivityStream;
+  Stream<bool> get connectivityStream;
 }
 
 class NetworkInfoImpl implements NetworkInfo {
@@ -13,11 +14,17 @@ class NetworkInfoImpl implements NetworkInfo {
   @override
   Future<bool> get isConnected async {
     final result = await connectivity.checkConnectivity();
-    return result != ConnectivityResult.none;
+    return result.contains(ConnectivityResult.mobile) ||
+        result.contains(ConnectivityResult.wifi) ||
+        result.contains(ConnectivityResult.ethernet);
   }
 
   @override
-  Stream<ConnectivityResult> get connectivityStream {
-    return connectivity.onConnectivityChanged;
+  Stream<bool> get connectivityStream {
+    return connectivity.onConnectivityChanged.map((results) {
+      return results.contains(ConnectivityResult.mobile) ||
+          results.contains(ConnectivityResult.wifi) ||
+          results.contains(ConnectivityResult.ethernet);
+    });
   }
 }

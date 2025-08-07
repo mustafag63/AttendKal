@@ -39,196 +39,512 @@ Modern, full-stack öğrenci devam takip uygulaması. **Flutter** + **Node.js + 
 - ✅ **Otomatik Yenileme**: Abonelik yönetimi
 - ✅ **İptal/Değiştirme**: Kolay plan değişikliği
 
-## 🏗️ **Mimari Yapı**
+## 🏗️ **Proje Komponentleri ve İşlevleri**
 
-### **Frontend (Flutter)**
-- **Framework**: Flutter 3.24+
-- **State Management**: BLoC Pattern
-- **Local Database**: SQLite (offline-first)
-- **UI**: Material Design 3
-- **Architecture**: Clean Architecture (Domain/Data/Presentation)
-- **Navigation**: GoRouter
-- **Dependency Injection**: GetIt
+### 📱 **Frontend (Flutter Uygulaması)**
+**Dizin**: `/lib/`
+**Amaç**: Çoklu platform mobil uygulama (iOS, Android, Web)
+**Teknolojiler**: Flutter 3.24+, Dart, BLoC Pattern
 
-### **Backend (Node.js + Express)**
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: JWT + Refresh Tokens
-- **Security**: Helmet, CORS, Rate Limiting
-- **Queue System**: Bull.js (Redis)
-- **Email Service**: Nodemailer
-- **File Upload**: Multer
+#### **🔧 Core Modülleri** (`/lib/core/`)
+| Modül | Dizin | İşlevi |
+|-------|-------|--------|
+| **Konfigürasyon** | `/core/config/` | Uygulama sabitleri, Firebase ayarları |
+| **Dependency Injection** | `/core/di/` | Servis bağımlılıklarının yönetimi |
+| **Ağ İşlemleri** | `/core/network/` | API client, bağlantı durumu kontrolü |
+| **Routing** | `/core/routes/` | Sayfa yönlendirme ve navigasyon |
+| **Tema** | `/core/theme/` | Material Design 3 tema ayarları |
+| **Veritabanı** | `/core/database/` | SQLite yerel veritabanı yönetimi |
+| **Yardımcılar** | `/core/utils/` | Bildirim servisi, yardımcı fonksiyonlar |
 
-### **Veritabanı Stratejisi**
-- **Primary**: PostgreSQL (production data)
-- **Local**: SQLite (offline caching)
-- **Sync**: Automatic background synchronization
-- **Redis**: Queue management ve caching
+#### **🎯 Feature Modülleri** (`/lib/features/`)
 
-## 🛠️ **Teknoloji Stack'i**
+##### 🔐 **Kimlik Doğrulama** (`/features/auth/`)
+- **Amaç**: Kullanıcı girişi, kaydı ve güvenlik
+- **Özellikler**: JWT token yönetimi, otomatik giriş, şifre sıfırlama
+- **Sayfalar**: Giriş, kayıt sayfaları
+- **State Management**: AuthBloc ile durum yönetimi
 
-| Bileşen | Teknoloji | Amaç |
-|---------|-----------|------|
-| **Mobil Uygulama** | Flutter + Dart | Cross-platform mobile |
-| **Backend API** | Node.js + Express | REST API server |
-| **Veritabanı** | PostgreSQL + Prisma | Primary data storage |
-| **Local DB** | SQLite | Offline caching |
-| **Queue System** | Redis + Bull.js | Background jobs |
-| **Auth** | JWT + Refresh Tokens | Secure authentication |
-| **State Management** | Flutter BLoC | Predictable state |
-| **Navigation** | GoRouter | Declarative routing |
-| **Notifications** | FCM + Local | Push notifications |
-| **Networking** | Dio + Interceptors | HTTP client |
-| **Validation** | Express Validator | Input validation |
-| **Logging** | Winston | Structured logging |
-| **Testing** | Jest + Flutter Test | Unit & Widget tests |
-| **Email** | Nodemailer | Email notifications |
-| **File Storage** | Multer | File uploads |
-| **Monitoring** | Prometheus + Grafana | Performance monitoring |
+##### 📚 **Kurs Yönetimi** (`/features/courses/`)
+- **Amaç**: Kursların oluşturulması ve yönetimi
+- **Özellikler**: Kurs ekleme/düzenleme/silme, haftalık program
+- **Sayfalar**: Kurs listesi, kurs ekleme sayfaları
+- **State Management**: CoursesBloc ile durum yönetimi
 
-## 📁 **Proje Yapısı**
+##### 📊 **Devam Takibi** (`/features/attendance/`)
+- **Amaç**: Günlük devam durumu işaretleme ve takibi
+- **Özellikler**: 4 farklı durum, tarihsel takip, istatistikler
+- **Sayfalar**: Devam işaretleme ve analiz sayfaları
+- **State Management**: AttendanceBloc ile durum yönetimi
+
+##### 💳 **Abonelik Yönetimi** (`/features/subscription/`)
+- **Amaç**: Ücretsiz/Pro plan yönetimi
+- **Özellikler**: Plan yükseltme, ödeme işlemleri, özellik kontrolü
+- **Sayfalar**: Abonelik planları ve ödeme sayfaları
+- **State Management**: SubscriptionBloc ile durum yönetimi
+
+##### 🏠 **Ana Sayfa** (`/features/home/`)
+- **Amaç**: Dashboard ve genel bakış
+- **Özellikler**: Günlük özet, hızlı erişim, bildirimler
+
+##### 👤 **Profil** (`/features/profile/`)
+- **Amaç**: Kullanıcı profili ve ayarlar
+- **Özellikler**: Profil düzenleme, ayarlar, çıkış
+
+##### 🚀 **Açılış Ekranı** (`/features/splash/`)
+- **Amaç**: Uygulama başlatma ve yükleme
+- **Özellikler**: Otomatik giriş kontrolü, veri senkronizasyonu
+
+---
+
+### 🖥️ **Backend (Node.js API Sunucusu)**
+**Dizin**: `/backend/`
+**Amaç**: RESTful API sunucusu ve iş mantığı
+**Teknolojiler**: Node.js 18+, Express.js, PostgreSQL, Prisma ORM
+
+#### **📡 API Katmanları** (`/backend/src/`)
+
+##### 🎮 **Controllers** (`/controllers/`)
+- **Amaç**: HTTP isteklerini karşılar ve yanıtları döner
+- **Dosyalar**:
+  - `authController.js` - Kimlik doğrulama endpoint'leri
+  - `courseController.js` - Kurs yönetimi endpoint'leri
+  - `attendanceController.js` - Devam takibi endpoint'leri
+  - `subscriptionController.js` - Abonelik yönetimi endpoint'leri
+
+##### 🛡️ **Middleware** (`/middleware/`)
+- **Amaç**: İstek öncesi güvenlik ve validasyon
+- **Dosyalar**:
+  - `authMiddleware.js` - JWT token doğrulama
+  - `errorHandler.js` - Hata yakalama ve işleme
+  - `validationMiddleware.js` - Giriş verisi validasyonu
+  - `requestLogger.js` - İstek loglaması
+  - `metricsMiddleware.js` - Performans metrikleri
+
+##### 🛣️ **Routes** (`/routes/`)
+- **Amaç**: URL yönlendirme ve endpoint tanımlama
+- **Dosyalar**:
+  - `authRoutes.js` - /auth/* yolları
+  - `courseRoutes.js` - /courses/* yolları
+  - `attendanceRoutes.js` - /attendance/* yolları
+  - `subscriptionRoutes.js` - /subscriptions/* yolları
+  - `healthRoutes.js` - /health sağlık kontrolü
+  - `queueRoutes.js` - /admin/queues kuyruk yönetimi
+
+##### 🏢 **Services** (`/services/`)
+- **Amaç**: İş mantığı ve veritabanı işlemleri
+- **Dosyalar**:
+  - `authService.js` - Kimlik doğrulama işlemleri
+  - `courseService.js` - Kurs CRUD işlemleri
+  - `attendanceService.js` - Devam takibi işlemleri
+  - `emailService.js` - E-posta gönderimi
+  - `queueService.js` - Arka plan görevleri
+  - `reportService.js` - Rapor oluşturma
+
+##### 📦 **DTO** (`/dto/`)
+- **Amaç**: Veri transfer objelerinin validasyonu
+- **Dosyalar**:
+  - `authDto.js` - Kimlik doğrulama veri şemaları
+  - `courseDto.js` - Kurs veri şemaları
+
+##### ⚙️ **Config** (`/config/`)
+- **Amaç**: Uygulama konfigürasyonu
+- **Dosyalar**:
+  - `index.js` - Ana konfigürasyon
+  - `logger.js` - Winston logger ayarları
+  - `swagger.js` - API dokümantasyon ayarları
+
+##### 🛢️ **Database** (`/prisma/`)
+- **Amaç**: Veritabanı şeması ve migration'lar
+- **Dosyalar**:
+  - `schema.prisma` - Veritabanı modelleri ve ilişkiler
+  - `dev.db` - SQLite geliştirme veritabanı
+
+##### 🧪 **Testing** (`/tests/`)
+- **Amaç**: Unit ve integration testleri
+- **Yapı**: Jest test framework'ü ile organize edilmiş testler
+
+---
+
+### 🗄️ **Veritabanı Yapısı**
+
+#### **Temel Tablolar**
+| Tablo | Amaç | İlişkiler |
+|-------|------|-----------|
+| **users** | Kullanıcı bilgileri | → courses, attendances, subscription |
+| **courses** | Kurs bilgileri | ← users, → attendances, schedules |
+| **attendances** | Devam kayıtları | ← users, courses |
+| **course_schedules** | Haftalık ders programı | ← courses |
+| **subscriptions** | Abonelik durumları | ← users |
+| **user_sessions** | Aktif oturumlar | ← users |
+
+#### **Veri Akışı**
+```
+Mobil App (SQLite) ↔️ API Gateway ↔️ Backend Services ↔️ PostgreSQL
+       ↕️                    ↕️              ↕️
+  Offline Cache      JWT Auth        Redis Queue
+```
+
+---
+
+### 🔧 **Platform Konfigürasyonları**
+
+#### 🤖 **Android** (`/android/`)
+- **Amaç**: Android platformu için native konfigürasyon
+- **İçerik**: Gradle build scripts, AndroidManifest, launcher icons
+- **Özellikler**: Google Play Store deployment ayarları
+
+#### 🍎 **iOS** (`/ios/`)
+- **Amaç**: iOS platformu için native konfigürasyon
+- **İçerik**: Xcode project, Info.plist, App Store ayarları
+- **Özellikler**: Apple Developer deployment ayarları
+
+#### 🌐 **Web** (`/web/`)
+- **Amaç**: Progressive Web App (PWA) konfigürasyonu
+- **İçerik**: HTML template, manifest.json, service worker
+- **Özellikler**: Web deployment için optimize edilmiş ayarlar
+
+#### 🪟 **Windows/Linux/macOS** (`/windows/`, `/linux/`, `/macos/`)
+- **Amaç**: Desktop platformları için native konfigürasyon
+- **İçerik**: CMake build files, desktop-specific ayarlar
+
+---
+
+### ☁️ **DevOps ve Deployment**
+
+#### 🐳 **Docker** (`/backend/docker-compose.yml`, `/backend/Dockerfile`)
+- **Amaç**: Konteynerize edilmiş deployment
+- **Servisler**: Backend, PostgreSQL, Redis
+- **Özellikler**: Development ve production ortamları
+
+#### ☸️ **Kubernetes** (`/k8s/`)
+- **Amaç**: Cloud-native deployment
+- **Dosyalar**:
+  - `deployment.yaml` - Uygulama deployment'ı
+  - `service.yaml` - Load balancer servisi
+  - `configmap.yaml` - Konfigürasyon değişkenleri
+  - `secrets.yaml` - Hassas bilgiler (encrypted)
+
+#### 📊 **Monitoring** (`/monitoring/`)
+- **Amaç**: Sistem performans izleme
+- **Araçlar**: Prometheus metrikleri, Grafana dashboard'ları
+- **Dosyalar**: `grafana-dashboard.json` - Hazır monitoring paneli
+
+#### ⚡ **Cloudflare** (`/cloudflare/`)
+- **Amaç**: CDN, güvenlik ve performans optimizasyonu
+- **Workers**: Edge computing ile güvenlik katmanı
+- **Dosyalar**: `security-worker.js` - DDoS protection, rate limiting
+
+---
+
+### 📁 **Statik Dosyalar**
+
+#### 🎨 **Assets** (`/assets/`)
+- **fonts/**: Özel fontlar (eğer varsa)
+- **icons/**: Uygulama iconları ve UI iconları
+- **images/**: Resimler ve görseller
+
+---
+
+## 🔄 **Uygulama Akışı**
+
+### 1. **Kullanıcı Girişi**
+```
+Flutter App → AuthService → JWT Token → Secure Storage
+```
+
+### 2. **Offline-First Strateji**
+```
+User Action → Local SQLite → Background Sync → Cloud PostgreSQL
+```
+
+### 3. **Bildirim Sistemi**
+```
+Course Schedule → Bull.js Queue → Firebase FCM → User Device
+```
+
+### 4. **Devam İşaretleme**
+```
+UI Input → AttendanceBloc → Local Storage → API Sync → Database
+```
+
+## 🏛️ **Sistem Mimarisi**
+
+AttendKal projesi, modern mobil uygulama geliştirme prensiplerine uygun olarak katmanlı mimari yapısı ile tasarlanmıştır:
+
+## 📊 **Bileşenler ve Sorumlulukları Özet Tablosu**
+
+| 🎯 Bileşen | 📁 Konum | 🎯 Ana Sorumluluk | 🔧 Teknoloji |
+|------------|----------|-------------------|--------------|
+| **📱 Mobil UI** | `/lib/features/*/presentation/` | Kullanıcı arayüzü ve etkileşimi | Flutter, Material Design 3 |
+| **🧠 State Management** | `/lib/features/*/bloc/` | Uygulama durumu yönetimi | BLoC Pattern |
+| **💾 Local Storage** | `/lib/core/database/` | Offline veri depolama | SQLite |
+| **🌐 API Client** | `/lib/core/network/` | Backend iletişimi | Dio HTTP Client |
+| **🔐 Authentication** | `/lib/features/auth/` | Kullanıcı güvenliği | JWT Tokens |
+| **📚 Course Management** | `/lib/features/courses/` | Kurs CRUD işlemleri | Flutter + BLoC |
+| **📊 Attendance Tracking** | `/lib/features/attendance/` | Devam takibi | Flutter + Local Storage |
+| **💳 Subscription** | `/lib/features/subscription/` | Ödeme yönetimi | Stripe Integration |
+| **🖥️ API Server** | `/backend/src/` | RESTful API sunumu | Node.js + Express |
+| **🏢 Business Logic** | `/backend/src/services/` | İş kuralları | JavaScript ES6+ |
+| **🗄️ Database** | `/backend/prisma/` | Veri persistance | PostgreSQL + Prisma |
+| **⚡ Background Jobs** | `/backend/src/services/queueService.js` | Async işlemler | Bull.js + Redis |
+| **📧 Notifications** | `/backend/src/services/emailService.js` | E-posta gönderimi | Nodemailer |
+| **🔔 Push Notifications** | `/lib/core/utils/notification_service.dart` | Mobil bildirimler | Firebase FCM |
+| **🛡️ Security** | `/backend/src/middleware/` | API güvenliği | JWT, Rate Limiting |
+| **📈 Monitoring** | `/monitoring/` | Sistem izleme | Prometheus + Grafana |
+| **🐳 Deployment** | `/k8s/`, `/backend/docker-compose.yml` | Containerization | Docker + Kubernetes |
+| **⚡ CDN/Security** | `/cloudflare/` | Edge computing | Cloudflare Workers |
+
+## 📁 **Detaylı Proje Klasör Yapısı**
+
+### 🗂️ **Ana Dizin Organizasyonu**
 
 ```
-AttendKal/
-├── lib/                          # Flutter uygulaması
-│   ├── core/
-│   │   ├── config/              # Uygulama konfigürasyonu
-│   │   │   └── app_config.dart  # Sabit değerler
-│   │   ├── di/                  # Dependency injection
-│   │   │   └── injection_container.dart
-│   │   ├── network/             # API client & network
-│   │   │   ├── api_client.dart  # HTTP client
-│   │   │   └── network_info.dart
-│   │   ├── routes/              # Uygulama routing
-│   │   │   └── app_router.dart
-│   │   ├── theme/               # UI temaları
-│   │   │   └── app_theme.dart
-│   │   ├── utils/               # Yardımcı fonksiyonlar
-│   │   │   └── notification_service.dart
-│   │   └── database/            # Yerel veritabanı
-│   │       └── database_helper.dart
-│   ├── features/
-│   │   ├── auth/                # Kimlik doğrulama
-│   │   │   ├── domain/
-│   │   │   │   └── entities/
-│   │   │   │       └── user.dart
-│   │   │   └── presentation/
-│   │   │       ├── bloc/
-│   │   │       │   └── auth_bloc.dart
-│   │   │       └── pages/
-│   │   │           ├── login_page.dart
-│   │   │           └── register_page.dart
-│   │   ├── courses/             # Kurs yönetimi
-│   │   │   ├── domain/
-│   │   │   │   └── entities/
-│   │   │   │       └── course.dart
-│   │   │   └── presentation/
-│   │   │       ├── bloc/
-│   │   │       │   └── courses_bloc.dart
-│   │   │       └── pages/
-│   │   │           ├── courses_page.dart
-│   │   │           └── add_course_page.dart
-│   │   ├── attendance/          # Devam takibi
-│   │   │   ├── domain/
-│   │   │   │   └── entities/
-│   │   │   │       └── attendance.dart
-│   │   │   └── presentation/
-│   │   │       ├── bloc/
-│   │   │       │   └── attendance_bloc.dart
-│   │   │       └── pages/
-│   │   │           └── attendance_page.dart
-│   │   ├── subscription/        # Abonelik planları
-│   │   │   ├── domain/
-│   │   │   │   └── entities/
-│   │   │   │       └── subscription.dart
-│   │   │   └── presentation/
-│   │   │       ├── bloc/
-│   │   │       │   └── subscription_bloc.dart
-│   │   │       └── pages/
-│   │   │           └── subscription_page.dart
-│   │   ├── home/                # Ana sayfa
-│   │   │   └── presentation/
-│   │   │       └── pages/
-│   │   │           └── home_page.dart
-│   │   ├── profile/             # Kullanıcı profili
-│   │   │   └── presentation/
-│   │   │       └── pages/
-│   │   │           └── profile_page.dart
-│   │   └── splash/              # Açılış ekranı
-│   │       └── presentation/
-│   │           └── pages/
-│   │               └── splash_page.dart
-│   └── main.dart
-├── backend/                      # Node.js API server
-│   ├── src/
-│   │   ├── controllers/         # Route controller'ları
-│   │   │   ├── authController.js
-│   │   │   ├── courseController.js
-│   │   │   ├── attendanceController.js
-│   │   │   └── subscriptionController.js
-│   │   ├── middleware/          # Custom middleware
-│   │   │   ├── authMiddleware.js
-│   │   │   ├── errorHandler.js
-│   │   │   ├── validationMiddleware.js
-│   │   │   ├── requestLogger.js
-│   │   │   └── metricsMiddleware.js
-│   │   ├── routes/              # API routes
-│   │   │   ├── authRoutes.js
-│   │   │   ├── courseRoutes.js
-│   │   │   ├── attendanceRoutes.js
-│   │   │   ├── subscriptionRoutes.js
-│   │   │   ├── healthRoutes.js
-│   │   │   └── queueRoutes.js
-│   │   ├── services/            # Business logic
-│   │   │   ├── authService.js
-│   │   │   ├── courseService.js
-│   │   │   ├── attendanceService.js
-│   │   │   ├── subscriptionService.js
-│   │   │   ├── emailService.js
-│   │   │   ├── queueService.js
-│   │   │   └── reportService.js
-│   │   ├── dto/                 # Data Transfer Objects
-│   │   │   ├── authDto.js
-│   │   │   ├── courseDto.js
-│   │   │   └── attendanceDto.js
-│   │   ├── config/              # Konfigürasyon
-│   │   │   ├── index.js
-│   │   │   ├── logger.js
-│   │   │   └── swagger.js
-│   │   ├── utils/               # Yardımcı fonksiyonlar
-│   │   │   └── prisma.js
-│   │   └── server.js            # Ana server dosyası
-│   ├── prisma/
-│   │   └── schema.prisma        # Veritabanı şeması
-│   ├── tests/                   # Test dosyaları
-│   │   ├── setup.js
-│   │   └── unit/
-│   │       └── services/
-│   │           └── authService.test.js
-│   ├── docker-compose.yml       # Docker compose
-│   ├── Dockerfile               # Docker image
-│   ├── jest.config.js           # Jest konfigürasyonu
-│   └── package.json
-├── android/                      # Android konfigürasyonu
-├── ios/                         # iOS konfigürasyonu
-├── assets/                      # Statik dosyalar
-│   ├── fonts/
-│   ├── icons/
-│   └── images/
-├── k8s/                         # Kubernetes deployment
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   ├── configmap.yaml
-│   └── secrets.yaml
-├── monitoring/                  # Monitoring konfigürasyonu
-│   └── grafana-dashboard.json
-├── cloudflare/                  # Cloudflare workers
-│   └── workers/
-│       └── security-worker.js
-├── pubspec.yaml                 # Flutter dependencies
-├── pubspec.lock
-└── README.md
+AttendKal/                      # 📁 Ana proje dizini
+│
+├── 📱 lib/                     # Flutter mobil uygulaması
+├── 🖥️ backend/                 # Node.js API sunucusu  
+├── 🤖 android/                 # Android platform konfigürasyonu
+├── 🍎 ios/                     # iOS platform konfigürasyonu
+├── 🌐 web/                     # Web platform konfigürasyonu
+├── 🪟 windows/                 # Windows desktop konfigürasyonu
+├── 🐧 linux/                  # Linux desktop konfigürasyonu
+├── 🍎 macos/                  # macOS desktop konfigürasyonu
+├── 🎨 assets/                  # Statik dosyalar ve medya
+├── ☸️ k8s/                     # Kubernetes deployment
+├── 📊 monitoring/              # İzleme ve metrikler
+├── ⚡ cloudflare/              # CDN ve edge computing
+├── 📋 pubspec.yaml             # Flutter proje konfigürasyonu
+└── 📖 README.md                # Proje dokümantasyonu
+```
+
+### 📱 **Flutter Uygulama Yapısı** (`/lib/`)
+
+#### **🎯 Core Katmanı** - Temel Altyapı
+```
+lib/core/
+├── 📋 config/                  # Uygulama konfigürasyonu
+│   ├── app_config.dart         # → Global sabitler, feature flags
+│   └── firebase_config.dart    # → Firebase başlatma ayarları
+├── 🔌 di/                      # Dependency Injection
+│   └── injection_container.dart # → GetIt servis kayıtları
+├── 🌐 network/                 # Ağ işlemleri
+│   ├── api_client.dart         # → Dio HTTP client + interceptors
+│   └── network_info.dart       # → İnternet bağlantı durumu
+├── 🧭 routes/                  # Navigasyon yönetimi
+│   └── app_router.dart         # → GoRouter sayfa yönlendirme
+├── 🎨 theme/                   # UI tema ayarları
+│   └── app_theme.dart          # → Material Design 3 tema
+├── 💾 database/                # Yerel veritabanı
+│   └── database_helper.dart    # → SQLite CRUD işlemleri
+└── 🔧 utils/                   # Yardımcı servisler
+    └── notification_service.dart # → Push & local bildirimler
+```
+
+#### **🎯 Features Katmanı** - İş Modülleri
+```
+lib/features/
+├── 🔐 auth/                    # Kimlik Doğrulama Modülü
+│   ├── domain/entities/user.dart       # → User veri modeli
+│   └── presentation/
+│       ├── bloc/auth_bloc.dart          # → Giriş/çıkış state yönetimi
+│       └── pages/
+│           ├── login_page.dart          # → Kullanıcı giriş ekranı
+│           └── register_page.dart       # → Yeni hesap oluşturma
+│
+├── 📚 courses/                 # Kurs Yönetimi Modülü
+│   ├── domain/entities/course.dart     # → Course veri modeli
+│   └── presentation/
+│       ├── bloc/courses_bloc.dart       # → Kurs CRUD state yönetimi
+│       └── pages/
+│           ├── courses_page.dart        # → Kurs listesi görünümü
+│           └── add_course_page.dart     # → Yeni kurs ekleme formu
+│
+├── 📊 attendance/              # Devam Takibi Modülü  
+│   ├── domain/entities/attendance.dart # → Attendance veri modeli
+│   └── presentation/
+│       ├── bloc/attendance_bloc.dart    # → Devam işaretleme state
+│       └── pages/attendance_page.dart   # → Devam durumu işaretleme
+│
+├── 💳 subscription/            # Abonelik Modülü
+│   ├── domain/entities/subscription.dart # → Subscription veri modeli
+│   └── presentation/
+│       ├── bloc/subscription_bloc.dart   # → Plan yönetimi state
+│       └── pages/subscription_page.dart  # → Ödeme & plan yükseltme
+│
+├── 🏠 home/                    # Ana Sayfa Modülü
+│   └── presentation/pages/home_page.dart # → Dashboard & günlük özet
+│
+├── 👤 profile/                 # Profil Modülü
+│   └── presentation/pages/profile_page.dart # → Kullanıcı ayarları
+│
+└── 🚀 splash/                  # Başlangıç Modülü
+    └── presentation/pages/splash_page.dart # → Uygulama yükleme ekranı
+```
+
+### 🖥️ **Backend API Yapısı** (`/backend/`)
+
+#### **🔧 Kaynak Kod Organizasyonu** (`/backend/src/`)
+```
+backend/src/
+├── 🎮 controllers/             # HTTP Request Handlers
+│   ├── authController.js       # → POST /auth/login, /auth/register
+│   ├── courseController.js     # → CRUD /api/courses/*
+│   ├── attendanceController.js # → CRUD /api/attendance/*
+│   └── subscriptionController.js # → /api/subscriptions/* yönetimi
+│
+├── 🛡️ middleware/              # Request Interceptors
+│   ├── authMiddleware.js       # → JWT token doğrulama
+│   ├── errorHandler.js         # → Global hata yakalama
+│   ├── validationMiddleware.js # → Request body validasyon
+│   ├── requestLogger.js        # → Morgan HTTP loglaması
+│   └── metricsMiddleware.js    # → Prometheus metrik toplama
+│
+├── 🛣️ routes/                  # URL Route Tanımları
+│   ├── authRoutes.js          # → /api/auth/* endpoint'leri
+│   ├── courseRoutes.js        # → /api/courses/* endpoint'leri
+│   ├── attendanceRoutes.js    # → /api/attendance/* endpoint'leri
+│   ├── subscriptionRoutes.js  # → /api/subscriptions/* endpoint'leri
+│   ├── healthRoutes.js        # → /health sistem durumu
+│   └── queueRoutes.js         # → /admin/queues kuyruk yönetimi
+│
+├── 🏢 services/                # Business Logic Katmanı
+│   ├── authService.js         # → JWT oluşturma, şifre hashleme
+│   ├── courseService.js       # → Kurs CRUD business logic
+│   ├── attendanceService.js   # → Devam takibi iş mantığı
+│   ├── emailService.js        # → Nodemailer e-posta gönderimi
+│   ├── queueService.js        # → Bull.js arka plan görevleri
+│   └── reportService.js       # → PDF/Excel rapor oluşturma
+│
+├── 📦 dto/                     # Data Transfer Objects
+│   ├── authDto.js             # → Giriş/kayıt validasyon şemaları
+│   └── courseDto.js           # → Kurs veri validasyon şemaları
+│
+├── ⚙️ config/                  # Uygulama Konfigürasyonu
+│   ├── index.js               # → Environment değişkenleri
+│   ├── logger.js              # → Winston logging ayarları
+│   └── swagger.js             # → API dokümantasyon konfigürasyonu
+│
+├── 🔧 utils/                   # Yardımcı Fonksiyonlar
+│   └── prisma.js              # → Veritabanı client başlatma
+│
+└── 🚀 server.js                # → Express.js uygulama giriş noktası
+```
+
+#### **🗄️ Veritabanı Katmanı** (`/backend/prisma/`)
+```
+backend/prisma/
+├── 📋 schema.prisma            # → Veritabanı modelleri & ilişkiler
+├── 💾 dev.db                  # → SQLite development veritabanı
+└── 📈 migrations/              # → Otomatik veritabanı sürüm kontrolü
+    ├── 001_initial_schema.sql
+    ├── 002_add_subscriptions.sql
+    └── 003_add_course_schedules.sql
+```
+
+#### **🧪 Test Katmanı** (`/backend/tests/`)
+```
+backend/tests/
+├── 🛠️ setup.js                # → Jest test ortamı konfigürasyonu
+├── 🔬 unit/                    # → Unit testler
+│   └── services/
+│       ├── authService.test.js
+│       ├── courseService.test.js
+│       └── attendanceService.test.js
+└── 🔗 integration/             # → API endpoint testleri
+    ├── auth.test.js
+    ├── courses.test.js
+    └── attendance.test.js
+```
+
+### 📱 **Platform Konfigürasyon Detayları**
+
+#### **🤖 Android Yapısı** (`/android/`)
+```
+android/
+├── 🛠️ app/
+│   ├── build.gradle.kts       # → Gradle build konfigürasyonu
+│   └── src/main/
+│       ├── AndroidManifest.xml # → App izinleri & aktiviteler
+│       ├── kotlin/MainActivity.kt # → Android native bridge
+│       └── res/                # → App iconları & kaynaklari
+├── ⚙️ gradle/                  # → Gradle wrapper konfigürasyonu
+└── 📋 gradle.properties        # → Build özelleştirmeleri
+```
+
+#### **🍎 iOS Yapısı** (`/ios/`)
+```
+ios/
+├── 🛠️ Runner/
+│   ├── Info.plist            # → iOS app konfigürasyonu & izinler
+│   ├── AppDelegate.swift     # → iOS uygulama lifecycle
+│   └── Assets.xcassets/      # → App iconları & launch screen
+├── 📦 Pods/                   # → CocoaPods dependencies
+└── 🏗️ Runner.xcodeproj/       # → Xcode proje konfigürasyonu
+```
+
+#### **🌐 Web Yapısı** (`/web/`)
+```
+web/
+├── 📄 index.html              # → HTML template
+├── 📋 manifest.json           # → Progressive Web App ayarları
+├── 🎨 favicon.png             # → Web site ikonu
+└── 📱 icons/                  # → PWA app iconları
+```
+
+### ☁️ **DevOps Infrastructure**
+
+#### **🐳 Container Yapısı** (`/backend/`)
+```
+backend/
+├── 🐳 Dockerfile              # → Multi-stage Docker build
+│   ├── Stage 1: Dependencies  # → npm install optimization
+│   ├── Stage 2: Build         # → Prisma generate
+│   └── Stage 3: Production    # → Minimal runtime image
+├── 🏗️ docker-compose.yml      # → Development ortamı
+│   ├── 🖥️ backend service      # → Node.js API container
+│   ├── 🗄️ postgres service     # → PostgreSQL database
+│   └── 🔴 redis service        # → Redis cache & sessions
+└── 🚫 .dockerignore           # → Build context optimizasyonu
+```
+
+#### **☸️ Kubernetes Cluster** (`/k8s/`)
+```
+k8s/
+├── 🏷️ namespace.yaml          # → Isolated Kubernetes namespace
+├── 🚀 deployment.yaml         # → Backend app deployment
+│   ├── Replica management     # → High availability setup
+│   ├── Rolling updates        # → Zero-downtime deployment
+│   └── Resource limits        # → CPU & memory constraints
+├── ⚖️ service.yaml            # → Load balancer konfigürasyonu
+├── 📋 configmap.yaml          # → Non-sensitive konfigürasyon
+└── 🔐 secrets.yaml            # → Encrypted sensitive data
+```
+
+#### **📊 Monitoring Stack** (`/monitoring/`)
+```
+monitoring/
+├── 🔍 prometheus.yml          # → Metrik toplama konfigürasyonu
+│   ├── Scrape configs         # → API endpoint monitoring
+│   ├── Alert rules            # → Performance threshold alerts
+│   └── Storage retention      # → Data lifecycle management
+└── 📈 grafana-dashboard.json  # → Pre-built görselleştirme paneli
+    ├── API response times     # → HTTP endpoint performance
+    ├── Database connections   # → PostgreSQL connection pool
+    ├── Memory & CPU usage     # → System resource utilization
+    └── Error rates           # → Application error tracking
+```
+
+#### **⚡ Edge Computing** (`/cloudflare/`)
+```
+cloudflare/
+├── 👷 workers/
+│   └── security-worker.js     # → Edge security katmanı
+│       ├── DDoS protection    # → Automated threat blocking
+│       ├── Rate limiting      # → API abuse prevention
+│       ├── Geo-blocking       # → Location-based access control
+│       └── Bot detection      # → Automated traffic filtering
+└── 📋 page-rules.json         # → CDN caching konfigürasyonu
 ```
 
 ## 🔧 **Kurulum ve Yapılandırma**

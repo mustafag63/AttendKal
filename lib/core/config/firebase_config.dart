@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class FirebaseConfig {
   // Firebase Options for different platforms
@@ -18,17 +20,17 @@ class FirebaseConfig {
     messagingSenderId: '48926672959',
     projectId: 'attendkal',
     storageBucket: 'attendkal.firebasestorage.app',
-    iosClientId: '1:48926672959:ios:89a83d4907d2e5bfd8908a',
+    iosClientId: '48926672959.apps.googleusercontent.com',
     iosBundleId: 'com.attendkal.attendkal',
   );
 
   static const FirebaseOptions webOptions = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    authDomain: 'YOUR_AUTH_DOMAIN',
+    apiKey: 'AIzaSyB7PsZOae00pONLfXVD2nrUaH4pwtvyTmk',
+    appId: '1:48926672959:web:89a83d4907d2e5bfd8908a',
+    messagingSenderId: '48926672959',
+    projectId: 'attendkal',
+    storageBucket: 'attendkal.firebasestorage.app',
+    authDomain: 'attendkal.firebaseapp.com',
   );
 
   // Firebase Collections
@@ -47,10 +49,28 @@ class FirebaseConfig {
   static const bool enableOfflinePersistence = true;
   static const bool enableNetworkActivityIndicatorForFirestore = true;
 
+  // Get platform-specific Firebase options
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return webOptions;
+    }
+    switch (Platform.operatingSystem) {
+      case 'android':
+        return androidOptions;
+      case 'ios':
+        return iosOptions;
+      default:
+        throw UnsupportedError(
+          'Firebase options have not been configured for this platform.',
+        );
+    }
+  }
+
   // Initialize Firebase
   static Future<void> initializeFirebase() async {
-    // Use default Firebase options (will auto-detect platform)
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: currentPlatform,
+    );
 
     // Configure Firestore
     FirebaseFirestore.instance.settings = const Settings(
