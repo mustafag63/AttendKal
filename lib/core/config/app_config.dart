@@ -1,21 +1,17 @@
+import 'package:dio/dio.dart';
+
 class AppConfig {
   static const String appName = 'AttendKal';
   static const String appVersion = '1.0.0';
 
   // Feature flags
-  static const bool subscriptionEnabled = true; // Enabled after fixing Firebase
+  static const bool subscriptionEnabled = true;
   static const bool analyticsEnabled = true;
   static const bool notificationsEnabled = true;
 
   // Subscription limits
   static const int freeCoursesLimit = 2;
   static const int proCoursesLimit = -1; // -1 means unlimited
-
-  // Firebase collection names
-  static const String usersCollection = 'users';
-  static const String coursesCollection = 'courses';
-  static const String attendanceCollection = 'attendance';
-  static const String subscriptionsCollection = 'subscriptions';
 
   // Notification settings
   static const String notificationChannelId = 'attendkal_notifications';
@@ -28,6 +24,8 @@ class AppConfig {
   static const String isFirstLaunchKey = 'is_first_launch';
   static const String subscriptionTypeKey = 'subscription_type';
   static const String darkModeKey = 'dark_mode';
+  static const String authTokenKey = 'auth_token';
+  static const String refreshTokenKey = 'refresh_token';
 
   // API configuration - Dynamic port support
   static const List<String> possibleBaseUrls = [
@@ -41,14 +39,15 @@ class AppConfig {
 
   // Get available backend URL
   static Future<String> getBackendUrl() async {
-    for (String url in possibleBaseUrls) {
+    for (final String url in possibleBaseUrls) {
       try {
-        final uri = Uri.parse('$url/health');
-        final response = await Future.any([
-          _checkUrl(uri),
-          Future.delayed(const Duration(milliseconds: 500), () => false),
-        ]);
-        if (response == true) {
+        final dio = Dio(BaseOptions(
+          connectTimeout: const Duration(milliseconds: 1500),
+          receiveTimeout: const Duration(milliseconds: 1500),
+        ));
+
+        final response = await dio.get('$url/health');
+        if (response.statusCode == 200) {
           return url;
         }
       } catch (e) {
@@ -59,16 +58,24 @@ class AppConfig {
     return possibleBaseUrls.first;
   }
 
-  static Future<bool> _checkUrl(Uri uri) async {
-    try {
-      // Bu method network paketini kullanacak, şimdilik basit bir implementasyon
-      return true; // ApiClient'da implement edilecek
-    } catch (e) {
-      return false;
-    }
-  }
+  // Request timeout configurations
+  static const Duration connectTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration sendTimeout = Duration(seconds: 30);
 
-  // Maintenance messages
+  // API Headers
+  static const Map<String, String> defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  // Error messages
+  static const String networkErrorMessage =
+      'Network connection error. Please check your internet connection.';
+  static const String serverErrorMessage =
+      'Server error. Please try again later.';
+  static const String authErrorMessage =
+      'Authentication failed. Please login again.';
   static const String subscriptionMaintenanceMessage =
-      'Abonelik bölümü şu anda bakımda. Kısa süre içinde tekrar deneyin.';
+      'Subscription service is currently under maintenance. Please try again later.';
 }

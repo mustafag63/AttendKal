@@ -37,13 +37,13 @@ const router = express.Router();
  *                   example: 3600.123
  */
 router.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        environment: config.server.nodeEnv,
-        version: process.env.npm_package_version || '1.0.0',
-        uptime: process.uptime(),
-    });
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: config.server.nodeEnv,
+    version: process.env.npm_package_version || '1.0.0',
+    uptime: process.uptime(),
+  });
 });
 
 /**
@@ -99,78 +99,78 @@ router.get('/health', (req, res) => {
  *         description: Service unavailable
  */
 router.get('/health/detailed', async (req, res) => {
-    const startTime = Date.now();
-    const healthStatus = {
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        environment: config.server.nodeEnv,
-        version: process.env.npm_package_version || '1.0.0',
-        uptime: process.uptime(),
-        services: {},
+  const startTime = Date.now();
+  const healthStatus = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: config.server.nodeEnv,
+    version: process.env.npm_package_version || '1.0.0',
+    uptime: process.uptime(),
+    services: {},
+  };
+
+  try {
+    // Database health check
+    const dbStart = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbResponseTime = Date.now() - dbStart;
+
+    healthStatus.services.database = {
+      status: 'healthy',
+      responseTime: dbResponseTime,
     };
 
-    try {
-        // Database health check
-        const dbStart = Date.now();
-        await prisma.$queryRaw`SELECT 1`;
-        const dbResponseTime = Date.now() - dbStart;
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    healthStatus.services.memory = {
+      usage: {
+        rss: Math.round(memUsage.rss / 1024 / 1024), // MB
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+        external: Math.round(memUsage.external / 1024 / 1024), // MB
+      },
+      percent: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
+    };
 
-        healthStatus.services.database = {
-            status: 'healthy',
-            responseTime: dbResponseTime,
-        };
+    // System information
+    healthStatus.services.system = {
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.version,
+      pid: process.pid,
+    };
 
-        // Memory usage
-        const memUsage = process.memoryUsage();
-        healthStatus.services.memory = {
-            usage: {
-                rss: Math.round(memUsage.rss / 1024 / 1024), // MB
-                heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
-                heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
-                external: Math.round(memUsage.external / 1024 / 1024), // MB
-            },
-            percent: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
-        };
+    // CPU usage (basic)
+    const cpuUsage = process.cpuUsage();
+    healthStatus.services.cpu = {
+      user: cpuUsage.user,
+      system: cpuUsage.system,
+    };
 
-        // System information
-        healthStatus.services.system = {
-            platform: process.platform,
-            arch: process.arch,
-            nodeVersion: process.version,
-            pid: process.pid,
-        };
+    const responseTime = Date.now() - startTime;
+    healthStatus.responseTime = responseTime;
 
-        // CPU usage (basic)
-        const cpuUsage = process.cpuUsage();
-        healthStatus.services.cpu = {
-            user: cpuUsage.user,
-            system: cpuUsage.system,
-        };
-
-        const responseTime = Date.now() - startTime;
-        healthStatus.responseTime = responseTime;
-
-        // Determine overall status
-        if (dbResponseTime > 1000) {
-            healthStatus.status = 'DEGRADED';
-        }
-
-        if (healthStatus.services.memory.percent > 90) {
-            healthStatus.status = 'DEGRADED';
-        }
-
-        res.status(healthStatus.status === 'OK' ? 200 : 503).json(healthStatus);
-    } catch (error) {
-        logger.error('Health check failed:', error);
-
-        healthStatus.status = 'UNHEALTHY';
-        healthStatus.services.database = {
-            status: 'unhealthy',
-            error: error.message,
-        };
-
-        res.status(503).json(healthStatus);
+    // Determine overall status
+    if (dbResponseTime > 1000) {
+      healthStatus.status = 'DEGRADED';
     }
+
+    if (healthStatus.services.memory.percent > 90) {
+      healthStatus.status = 'DEGRADED';
+    }
+
+    res.status(healthStatus.status === 'OK' ? 200 : 503).json(healthStatus);
+  } catch (error) {
+    logger.error('Health check failed:', error);
+
+    healthStatus.status = 'UNHEALTHY';
+    healthStatus.services.database = {
+      status: 'unhealthy',
+      error: error.message,
+    };
+
+    res.status(503).json(healthStatus);
+  }
 });
 
 /**
@@ -193,7 +193,7 @@ router.get('/health/detailed', async (req, res) => {
  *                   example: true
  */
 router.get('/health/liveness', (req, res) => {
-    res.status(200).json({ alive: true });
+  res.status(200).json({ alive: true });
 });
 
 /**
@@ -210,32 +210,32 @@ router.get('/health/liveness', (req, res) => {
  *         description: Service is not ready
  */
 router.get('/health/readiness', async (req, res) => {
-    try {
-        // Check database connectivity
-        await prisma.$queryRaw`SELECT 1`;
+  try {
+    // Check database connectivity
+    await prisma.$queryRaw`SELECT 1`;
 
-        // Check memory usage
-        const memUsage = process.memoryUsage();
-        const memPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const memPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
 
-        if (memPercent > 95) {
-            throw new Error('Memory usage too high');
-        }
-
-        res.status(200).json({
-            ready: true,
-            checks: {
-                database: 'OK',
-                memory: 'OK',
-            },
-        });
-    } catch (error) {
-        logger.warn('Readiness check failed:', error.message);
-        res.status(503).json({
-            ready: false,
-            error: error.message,
-        });
+    if (memPercent > 95) {
+      throw new Error('Memory usage too high');
     }
+
+    res.status(200).json({
+      ready: true,
+      checks: {
+        database: 'OK',
+        memory: 'OK',
+      },
+    });
+  } catch (error) {
+    logger.warn('Readiness check failed:', error.message);
+    res.status(503).json({
+      ready: false,
+      error: error.message,
+    });
+  }
 });
 
 /**
@@ -260,51 +260,51 @@ router.get('/health/readiness', async (req, res) => {
  *                   type: object
  */
 router.get('/health/metrics', async (req, res) => {
+  try {
+    const metrics = {
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage(),
+      eventLoop: {
+        delay: await getEventLoopDelay(),
+      },
+    };
+
+    // Database metrics
     try {
-        const metrics = {
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            cpu: process.cpuUsage(),
-            eventLoop: {
-                delay: await getEventLoopDelay(),
-            },
-        };
+      const userCount = await prisma.user.count();
+      const courseCount = await prisma.course.count({ where: { isActive: true } });
+      const attendanceCount = await prisma.attendance.count();
 
-        // Database metrics
-        try {
-            const userCount = await prisma.user.count();
-            const courseCount = await prisma.course.count({ where: { isActive: true } });
-            const attendanceCount = await prisma.attendance.count();
-
-            metrics.database = {
-                users: userCount,
-                activeCourses: courseCount,
-                attendanceRecords: attendanceCount,
-            };
-        } catch (error) {
-            metrics.database = { error: 'Unable to fetch database metrics' };
-        }
-
-        res.status(200).json(metrics);
+      metrics.database = {
+        users: userCount,
+        activeCourses: courseCount,
+        attendanceRecords: attendanceCount,
+      };
     } catch (error) {
-        logger.error('Metrics collection failed:', error);
-        res.status(500).json({
-            error: 'Failed to collect metrics',
-            message: error.message,
-        });
+      metrics.database = { error: 'Unable to fetch database metrics' };
     }
+
+    res.status(200).json(metrics);
+  } catch (error) {
+    logger.error('Metrics collection failed:', error);
+    res.status(500).json({
+      error: 'Failed to collect metrics',
+      message: error.message,
+    });
+  }
 });
 
 // Helper function to measure event loop delay
 function getEventLoopDelay() {
-    return new Promise((resolve) => {
-        const start = process.hrtime.bigint();
-        setImmediate(() => {
-            const delta = process.hrtime.bigint() - start;
-            resolve(Number(delta) / 1000000); // Convert to milliseconds
-        });
+  return new Promise((resolve) => {
+    const start = process.hrtime.bigint();
+    setImmediate(() => {
+      const delta = process.hrtime.bigint() - start;
+      resolve(Number(delta) / 1000000); // Convert to milliseconds
     });
+  });
 }
 
 export default router; 

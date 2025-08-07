@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 
 // Events
 abstract class CoursesEvent extends Equatable {
@@ -84,14 +84,11 @@ class CoursesError extends CoursesState {
 
 // BLoC
 class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
-  final ApiClient _apiClient;
+  final ApiService _apiService;
 
   CoursesBloc({
-    required ApiClient apiClient,
-    dynamic getCoursesUseCase,
-    dynamic addCourseUseCase,
-    dynamic deleteCourseUseCase,
-  })  : _apiClient = apiClient,
+    required ApiService apiService,
+  })  : _apiService = apiService,
         super(CoursesInitial()) {
     on<LoadCoursesEvent>(_onLoadCourses);
     on<AddCourseEvent>(_onAddCourse);
@@ -99,88 +96,89 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<SearchCoursesEvent>(_onSearchCourses);
   }
 
-  void _onLoadCourses(
+  Future<void> _onLoadCourses(
       LoadCoursesEvent event, Emitter<CoursesState> emit) async {
     emit(CoursesLoading());
     try {
-      final response = await _apiClient.getCourses();
-
-      if (response.success && response.data != null) {
-        emit(CoursesLoaded(response.data!));
-      } else {
-        emit(CoursesError(response.error ?? 'Failed to load courses'));
-      }
+      final courses = await _apiService.getCourses();
+      emit(CoursesLoaded(courses));
+    } on ApiError catch (e) {
+      emit(CoursesError(e.message ?? 'Failed to load courses'));
     } catch (e) {
-      emit(CoursesError('An unexpected error occurred: ${e.toString()}'));
+      emit(CoursesError('An unexpected error occurred'));
     }
   }
 
-  void _onAddCourse(AddCourseEvent event, Emitter<CoursesState> emit) async {
+  Future<void> _onAddCourse(
+      AddCourseEvent event, Emitter<CoursesState> emit) async {
     emit(CoursesLoading());
     try {
-      final response = await _apiClient.createCourse(
-        name: event.name,
-        code: event.code,
-        instructor: event.instructor,
-        description: event.description,
-        color: event.color,
-        schedule: event.schedule,
-      );
+      final courseData = {
+        'name': event.name,
+        'code': event.code,
+        'instructor': event.instructor,
+        'description': event.description,
+        'color': event.color,
+        'schedule': event.schedule,
+      };
 
-      if (response.success) {
-        // Reload courses after successful creation
-        add(LoadCoursesEvent());
-      } else {
-        emit(CoursesError(response.error ?? 'Failed to create course'));
-      }
+      await _apiService.createCourse(courseData);
+
+      // Reload courses after adding
+      final courses = await _apiService.getCourses();
+      emit(CoursesLoaded(courses));
+    } on ApiError catch (e) {
+      emit(CoursesError(e.message ?? 'Failed to add course'));
     } catch (e) {
-      emit(CoursesError('An unexpected error occurred: ${e.toString()}'));
+      emit(CoursesError('An unexpected error occurred'));
     }
   }
 
-  void _onDeleteCourse(
+  Future<void> _onDeleteCourse(
       DeleteCourseEvent event, Emitter<CoursesState> emit) async {
-    try {
-      final response = await _apiClient.deleteCourse(event.courseId);
-      
-      if (response.success) {
-        // Reload courses after successful deletion
-        add(LoadCoursesEvent());
-      } else {
-        emit(CoursesError(response.error ?? 'Failed to delete course'));
+    final currentState = state;
+    if (currentState is CoursesLoaded) {
+      emit(CoursesLoading());
+      try {
+        await _apiService.deleteCourse(event.courseId);
+
+        // Reload courses after deleting
+        final courses = await _apiService.getCourses();
+        emit(CoursesLoaded(courses));
+      } on ApiError catch (e) {
+        emit(CoursesError(e.message ?? 'Failed to delete course'));
+        // Restore previous state on error
+        emit(currentState);
+      } catch (e) {
+        emit(CoursesError('An unexpected error occurred'));
+        // Restore previous state on error
+        emit(currentState);
       }
-    } catch (e) {
-      emit(CoursesError('Failed to delete course: ${e.toString()}'));
     }
   }
 
-  void _onSearchCourses(
+  Future<void> _onSearchCourses(
       SearchCoursesEvent event, Emitter<CoursesState> emit) async {
-    emit(CoursesLoading());
-    try {
-      // Note: We need to add search parameter to getCourses in ApiClient
-      final response = await _apiClient.getCourses();
-
-      if (response.success && response.data != null) {
-        // Filter courses locally for now
-        final filteredCourses = response.data!.where((course) {
-          final query = event.query.toLowerCase();
-          final name = (course['name'] as String? ?? '').toLowerCase();
-          final code = (course['code'] as String? ?? '').toLowerCase();
-          final instructor =
-              (course['instructor'] as String? ?? '').toLowerCase();
-
-          return name.contains(query) ||
-              code.contains(query) ||
-              instructor.contains(query);
-        }).toList();
-
-        emit(CoursesLoaded(filteredCourses));
-      } else {
-        emit(CoursesError(response.error ?? 'Failed to search courses'));
+    final currentState = state;
+    if (currentState is CoursesLoaded) {
+      if (event.query.isEmpty) {
+        // Show all courses if query is empty
+        emit(currentState);
+        return;
       }
-    } catch (e) {
-      emit(CoursesError('An unexpected error occurred: ${e.toString()}'));
+
+      final filteredCourses = currentState.courses.where((course) {
+        final name = course['name']?.toString().toLowerCase() ?? '';
+        final code = course['code']?.toString().toLowerCase() ?? '';
+        final instructor = course['instructor']?.toString().toLowerCase() ?? '';
+        final query = event.query.toLowerCase();
+
+        return name.contains(query) ||
+            code.contains(query) ||
+            instructor.contains(query);
+      }).toList();
+
+      emit(CoursesLoaded(filteredCourses));
     }
   }
 }

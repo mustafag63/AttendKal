@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/config/app_config.dart';
-import 'core/config/firebase_config.dart';
 import 'core/di/injection_container.dart';
-import 'core/network/api_client.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/notification_service.dart';
@@ -17,14 +15,8 @@ import 'features/subscription/presentation/bloc/subscription_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await FirebaseConfig.initializeFirebase();
-
-  // Initialize dependency injection
+  // Initialize dependency injection (includes API service initialization)
   await initializeDependencies();
-
-  // Initialize API client
-  await ApiClient().initialize();
 
   // Initialize notification service
   await NotificationService.initialize();

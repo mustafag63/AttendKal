@@ -3,12 +3,13 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: attendkal-postgres
     environment:
       POSTGRES_DB: attendkal
       POSTGRES_USER: attendkal
-      POSTGRES_PASSWORD: attendkal_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-attendkal_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5432:5432"
     volumes:
@@ -21,6 +22,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    restart: unless-stopped
 
   # Redis Cache & Queue
   redis:

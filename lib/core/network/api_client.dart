@@ -32,7 +32,7 @@ class ApiClient {
   }
 
   Future<String> _discoverBackendUrl() async {
-    for (String url in AppConfig.possibleBaseUrls) {
+    for (final String url in AppConfig.possibleBaseUrls) {
       try {
         final testDio = Dio(BaseOptions(
           connectTimeout: const Duration(milliseconds: 1000),
@@ -105,7 +105,12 @@ class ApiClient {
       'name': name,
       'email': email,
       'password': password,
+      'confirmPassword': password,
     });
+  }
+
+  Future<Response> getCurrentUser() async {
+    return await _dio.get('/auth/me');
   }
 
   Future<Response> logout() async {
@@ -146,6 +151,10 @@ class ApiClient {
   // Subscription methods
   Future<Response> getSubscriptionStatus() async {
     return await _dio.get('/subscriptions');
+  }
+
+  Future<Response> getSubscription() async {
+    return await _dio.get('/subscriptions/current');
   }
 
   Future<Response> upgradeSubscription(String planType) async {

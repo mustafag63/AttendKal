@@ -6,186 +6,186 @@ import { logger } from '../config/logger.js';
 import { config } from '../config/index.js';
 
 class ReportService {
-    constructor() {
-        this.browser = null;
+  constructor() {
+    this.browser = null;
+  }
+
+  async initializeBrowser() {
+    if (!this.browser) {
+      this.browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+    }
+    return this.browser;
+  }
+
+  async closeBrowser() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
+  }
+
+  // Generate comprehensive attendance report
+  async generateAttendanceReport(userId, startDate, endDate, options = {}) {
+    try {
+      const { courseId, format = 'pdf', includeCharts = true } = options;
+
+      // Fetch user data
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Build where clause
+      const where = {
+        userId,
+        date: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+        ...(courseId && { courseId }),
+      };
+
+      // Fetch attendance data
+      const [attendances, courses, summary] = await Promise.all([
+        this.getAttendanceData(where),
+        this.getCourseData(userId, courseId),
+        this.getAttendanceSummary(where),
+      ]);
+
+      const reportData = {
+        user,
+        period: { startDate, endDate },
+        attendances,
+        courses,
+        summary,
+        generatedAt: new Date(),
+      };
+
+      // Generate report based on format
+      switch (format) {
+      case 'pdf':
+        return await this.generatePDFReport(reportData, includeCharts);
+      case 'excel':
+        return await this.generateExcelReport(reportData);
+      case 'html':
+        return await this.generateHTMLReport(reportData);
+      default:
+        throw new Error(`Unsupported format: ${format}`);
+      }
+    } catch (error) {
+      logger.error('Error generating attendance report:', error);
+      throw error;
+    }
+  }
+
+  async getAttendanceData(where) {
+    return prisma.attendance.findMany({
+      where,
+      include: {
+        course: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            color: true,
+            instructor: true,
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
+  async getCourseData(userId, courseId) {
+    const where = {
+      userId,
+      isActive: true,
+      ...(courseId && { id: courseId }),
+    };
+
+    return prisma.course.findMany({
+      where,
+      include: {
+        schedule: true,
+        _count: {
+          select: { attendances: true },
+        },
+      },
+    });
+  }
+
+  async getAttendanceSummary(where) {
+    const stats = await prisma.attendance.groupBy({
+      by: ['status'],
+      where,
+      _count: { status: true },
+    });
+
+    const totalClasses = stats.reduce((sum, stat) => sum + stat._count.status, 0);
+    const presentCount = stats.find(s => s.status === 'PRESENT')?._count.status || 0;
+    const lateCount = stats.find(s => s.status === 'LATE')?._count.status || 0;
+    const absentCount = stats.find(s => s.status === 'ABSENT')?._count.status || 0;
+    const excusedCount = stats.find(s => s.status === 'EXCUSED')?._count.status || 0;
+
+    const attendedClasses = presentCount + lateCount;
+    const attendanceRate = totalClasses > 0 ? (attendedClasses / totalClasses) * 100 : 0;
+
+    return {
+      totalClasses,
+      presentCount,
+      lateCount,
+      absentCount,
+      excusedCount,
+      attendedClasses,
+      attendanceRate: Math.round(attendanceRate * 100) / 100,
+    };
+  }
+
+  async generatePDFReport(reportData, includeCharts) {
+    const htmlContent = this.generateHTMLReport(reportData, includeCharts);
+
+    const browser = await this.initializeBrowser();
+    const page = await browser.newPage();
+
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px',
+      },
+    });
+
+    await page.close();
+
+    return {
+      buffer: pdfBuffer,
+      filename: `attendance-report-${reportData.user.id}-${Date.now()}.pdf`,
+      contentType: 'application/pdf',
+    };
+  }
+
+  generateHTMLReport(reportData, includeCharts = true) {
+    const { user, period, attendances, courses, summary, generatedAt } = reportData;
+
+    // Generate charts data if needed
+    let chartsHTML = '';
+    if (includeCharts) {
+      chartsHTML = this.generateChartsHTML(summary, attendances);
     }
 
-    async initializeBrowser() {
-        if (!this.browser) {
-            this.browser = await puppeteer.launch({
-                headless: 'new',
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            });
-        }
-        return this.browser;
-    }
-
-    async closeBrowser() {
-        if (this.browser) {
-            await this.browser.close();
-            this.browser = null;
-        }
-    }
-
-    // Generate comprehensive attendance report
-    async generateAttendanceReport(userId, startDate, endDate, options = {}) {
-        try {
-            const { courseId, format = 'pdf', includeCharts = true } = options;
-
-            // Fetch user data
-            const user = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { id: true, name: true, email: true },
-            });
-
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            // Build where clause
-            const where = {
-                userId,
-                date: {
-                    gte: new Date(startDate),
-                    lte: new Date(endDate),
-                },
-                ...(courseId && { courseId }),
-            };
-
-            // Fetch attendance data
-            const [attendances, courses, summary] = await Promise.all([
-                this.getAttendanceData(where),
-                this.getCourseData(userId, courseId),
-                this.getAttendanceSummary(where),
-            ]);
-
-            const reportData = {
-                user,
-                period: { startDate, endDate },
-                attendances,
-                courses,
-                summary,
-                generatedAt: new Date(),
-            };
-
-            // Generate report based on format
-            switch (format) {
-                case 'pdf':
-                    return await this.generatePDFReport(reportData, includeCharts);
-                case 'excel':
-                    return await this.generateExcelReport(reportData);
-                case 'html':
-                    return await this.generateHTMLReport(reportData);
-                default:
-                    throw new Error(`Unsupported format: ${format}`);
-            }
-        } catch (error) {
-            logger.error('Error generating attendance report:', error);
-            throw error;
-        }
-    }
-
-    async getAttendanceData(where) {
-        return prisma.attendance.findMany({
-            where,
-            include: {
-                course: {
-                    select: {
-                        id: true,
-                        name: true,
-                        code: true,
-                        color: true,
-                        instructor: true,
-                    },
-                },
-            },
-            orderBy: { date: 'desc' },
-        });
-    }
-
-    async getCourseData(userId, courseId) {
-        const where = {
-            userId,
-            isActive: true,
-            ...(courseId && { id: courseId }),
-        };
-
-        return prisma.course.findMany({
-            where,
-            include: {
-                schedule: true,
-                _count: {
-                    select: { attendances: true },
-                },
-            },
-        });
-    }
-
-    async getAttendanceSummary(where) {
-        const stats = await prisma.attendance.groupBy({
-            by: ['status'],
-            where,
-            _count: { status: true },
-        });
-
-        const totalClasses = stats.reduce((sum, stat) => sum + stat._count.status, 0);
-        const presentCount = stats.find(s => s.status === 'PRESENT')?._count.status || 0;
-        const lateCount = stats.find(s => s.status === 'LATE')?._count.status || 0;
-        const absentCount = stats.find(s => s.status === 'ABSENT')?._count.status || 0;
-        const excusedCount = stats.find(s => s.status === 'EXCUSED')?._count.status || 0;
-
-        const attendedClasses = presentCount + lateCount;
-        const attendanceRate = totalClasses > 0 ? (attendedClasses / totalClasses) * 100 : 0;
-
-        return {
-            totalClasses,
-            presentCount,
-            lateCount,
-            absentCount,
-            excusedCount,
-            attendedClasses,
-            attendanceRate: Math.round(attendanceRate * 100) / 100,
-        };
-    }
-
-    async generatePDFReport(reportData, includeCharts) {
-        const htmlContent = this.generateHTMLReport(reportData, includeCharts);
-
-        const browser = await this.initializeBrowser();
-        const page = await browser.newPage();
-
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: {
-                top: '20px',
-                right: '20px',
-                bottom: '20px',
-                left: '20px',
-            },
-        });
-
-        await page.close();
-
-        return {
-            buffer: pdfBuffer,
-            filename: `attendance-report-${reportData.user.id}-${Date.now()}.pdf`,
-            contentType: 'application/pdf',
-        };
-    }
-
-    generateHTMLReport(reportData, includeCharts = true) {
-        const { user, period, attendances, courses, summary, generatedAt } = reportData;
-
-        // Generate charts data if needed
-        let chartsHTML = '';
-        if (includeCharts) {
-            chartsHTML = this.generateChartsHTML(summary, attendances);
-        }
-
-        return `
+    return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -390,10 +390,10 @@ class ReportService {
       </body>
       </html>
     `;
-    }
+  }
 
-    generateChartsHTML(summary, attendances) {
-        return `
+  generateChartsHTML(summary, attendances) {
+    return `
       <div class="charts-section">
         <div class="chart-container">
           <h3>Attendance Distribution</h3>
@@ -405,13 +405,13 @@ class ReportService {
         </div>
       </div>
     `;
-    }
+  }
 
-    generateChartsScript(summary, attendances) {
-        // Prepare weekly trend data
-        const weeklyData = this.prepareWeeklyTrendData(attendances);
+  generateChartsScript(summary, attendances) {
+    // Prepare weekly trend data
+    const weeklyData = this.prepareWeeklyTrendData(attendances);
 
-        return `
+    return `
       <script>
         // Attendance Distribution Chart
         const ctx1 = document.getElementById('attendanceChart').getContext('2d');
@@ -460,120 +460,120 @@ class ReportService {
         });
       </script>
     `;
-    }
+  }
 
-    prepareWeeklyTrendData(attendances) {
-        // Group attendances by week and calculate rates
-        const weeks = {};
+  prepareWeeklyTrendData(attendances) {
+    // Group attendances by week and calculate rates
+    const weeks = {};
 
-        attendances.forEach(attendance => {
-            const date = new Date(attendance.date);
-            const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
-            const weekKey = weekStart.toISOString().split('T')[0];
+    attendances.forEach(attendance => {
+      const date = new Date(attendance.date);
+      const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+      const weekKey = weekStart.toISOString().split('T')[0];
 
-            if (!weeks[weekKey]) {
-                weeks[weekKey] = { total: 0, attended: 0 };
-            }
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = { total: 0, attended: 0 };
+      }
 
-            weeks[weekKey].total++;
-            if (attendance.status === 'PRESENT' || attendance.status === 'LATE') {
-                weeks[weekKey].attended++;
-            }
-        });
+      weeks[weekKey].total++;
+      if (attendance.status === 'PRESENT' || attendance.status === 'LATE') {
+        weeks[weekKey].attended++;
+      }
+    });
 
-        const labels = Object.keys(weeks).sort();
-        const rates = labels.map(week => {
-            const data = weeks[week];
-            return data.total > 0 ? Math.round((data.attended / data.total) * 100) : 0;
-        });
+    const labels = Object.keys(weeks).sort();
+    const rates = labels.map(week => {
+      const data = weeks[week];
+      return data.total > 0 ? Math.round((data.attended / data.total) * 100) : 0;
+    });
 
-        return { labels, rates };
-    }
+    return { labels, rates };
+  }
 
-    async generateExcelReport(reportData) {
-        const { user, period, attendances, courses, summary, generatedAt } = reportData;
+  async generateExcelReport(reportData) {
+    const { user, period, attendances, courses, summary, generatedAt } = reportData;
 
-        const workbook = new ExcelJS.Workbook();
+    const workbook = new ExcelJS.Workbook();
 
-        // Summary Sheet
-        const summarySheet = workbook.addWorksheet('Summary');
+    // Summary Sheet
+    const summarySheet = workbook.addWorksheet('Summary');
 
-        // Add header
-        summarySheet.mergeCells('A1:E1');
-        summarySheet.getCell('A1').value = `Attendance Report - ${user.name}`;
-        summarySheet.getCell('A1').font = { size: 16, bold: true };
-        summarySheet.getCell('A1').alignment = { horizontal: 'center' };
+    // Add header
+    summarySheet.mergeCells('A1:E1');
+    summarySheet.getCell('A1').value = `Attendance Report - ${user.name}`;
+    summarySheet.getCell('A1').font = { size: 16, bold: true };
+    summarySheet.getCell('A1').alignment = { horizontal: 'center' };
 
-        // Add period info
-        summarySheet.getCell('A3').value = 'Period:';
-        summarySheet.getCell('B3').value = `${period.startDate} to ${period.endDate}`;
-        summarySheet.getCell('A4').value = 'Generated:';
-        summarySheet.getCell('B4').value = generatedAt.toLocaleString();
+    // Add period info
+    summarySheet.getCell('A3').value = 'Period:';
+    summarySheet.getCell('B3').value = `${period.startDate} to ${period.endDate}`;
+    summarySheet.getCell('A4').value = 'Generated:';
+    summarySheet.getCell('B4').value = generatedAt.toLocaleString();
 
-        // Add summary statistics
-        summarySheet.getCell('A6').value = 'Attendance Summary';
-        summarySheet.getCell('A6').font = { bold: true };
+    // Add summary statistics
+    summarySheet.getCell('A6').value = 'Attendance Summary';
+    summarySheet.getCell('A6').font = { bold: true };
 
-        const summaryData = [
-            ['Metric', 'Value'],
-            ['Total Classes', summary.totalClasses],
-            ['Classes Attended', summary.attendedClasses],
-            ['Attendance Rate', `${summary.attendanceRate}%`],
-            ['Present', summary.presentCount],
-            ['Late', summary.lateCount],
-            ['Absent', summary.absentCount],
-            ['Excused', summary.excusedCount],
-        ];
+    const summaryData = [
+      ['Metric', 'Value'],
+      ['Total Classes', summary.totalClasses],
+      ['Classes Attended', summary.attendedClasses],
+      ['Attendance Rate', `${summary.attendanceRate}%`],
+      ['Present', summary.presentCount],
+      ['Late', summary.lateCount],
+      ['Absent', summary.absentCount],
+      ['Excused', summary.excusedCount],
+    ];
 
-        summarySheet.addRows(summaryData, 'A7');
+    summarySheet.addRows(summaryData, 'A7');
 
-        // Attendance Details Sheet
-        const detailsSheet = workbook.addWorksheet('Attendance Details');
+    // Attendance Details Sheet
+    const detailsSheet = workbook.addWorksheet('Attendance Details');
 
-        const headers = ['Date', 'Course Name', 'Course Code', 'Status', 'Note'];
-        detailsSheet.addRow(headers);
+    const headers = ['Date', 'Course Name', 'Course Code', 'Status', 'Note'];
+    detailsSheet.addRow(headers);
 
-        const attendanceRows = attendances.map(attendance => [
-            attendance.date.toLocaleDateString(),
-            attendance.course.name,
-            attendance.course.code,
-            attendance.status,
-            attendance.note || '',
-        ]);
+    const attendanceRows = attendances.map(attendance => [
+      attendance.date.toLocaleDateString(),
+      attendance.course.name,
+      attendance.course.code,
+      attendance.status,
+      attendance.note || '',
+    ]);
 
-        detailsSheet.addRows(attendanceRows);
+    detailsSheet.addRows(attendanceRows);
 
-        // Style the headers
-        detailsSheet.getRow(1).font = { bold: true };
-        detailsSheet.getRow(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' },
-        };
+    // Style the headers
+    detailsSheet.getRow(1).font = { bold: true };
+    detailsSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
 
-        // Auto-fit columns
-        detailsSheet.columns.forEach(column => {
-            column.width = 15;
-        });
+    // Auto-fit columns
+    detailsSheet.columns.forEach(column => {
+      column.width = 15;
+    });
 
-        const buffer = await workbook.xlsx.writeBuffer();
+    const buffer = await workbook.xlsx.writeBuffer();
 
-        return {
-            buffer,
-            filename: `attendance-report-${user.id}-${Date.now()}.xlsx`,
-            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        };
-    }
+    return {
+      buffer,
+      filename: `attendance-report-${user.id}-${Date.now()}.xlsx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+  }
 
-    getDayName(dayOfWeek) {
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        return days[dayOfWeek] || 'Unknown';
-    }
+  getDayName(dayOfWeek) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[dayOfWeek] || 'Unknown';
+  }
 
-    // Cleanup method
-    async cleanup() {
-        await this.closeBrowser();
-    }
+  // Cleanup method
+  async cleanup() {
+    await this.closeBrowser();
+  }
 }
 
 // Export singleton instance
@@ -583,9 +583,9 @@ export default reportService;
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-    await reportService.cleanup();
+  await reportService.cleanup();
 });
 
 process.on('SIGINT', async () => {
-    await reportService.cleanup();
+  await reportService.cleanup();
 }); 

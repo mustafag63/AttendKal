@@ -1,20 +1,17 @@
 import 'dart:io';
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../config/app_config.dart';
 
-/// Handles local and FCM notifications
+/// Handles local notifications only (Firebase FCM removed)
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
-  static final FirebaseMessaging _firebaseMessaging =
-      FirebaseMessaging.instance;
 
-  /// Initialize timezone data, local notifications, and FCM
+  /// Initialize timezone data and local notifications
   static Future<void> initialize() async {
     // Initialize timezone database and set local timezone
     tz.initializeTimeZones();
@@ -23,7 +20,11 @@ class NotificationService {
     // Local notification settings
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings();
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -39,8 +40,10 @@ class NotificationService {
       await _createNotificationChannel();
     }
 
-    // FCM setup
-    await _initializeFirebaseMessaging();
+    // Request permissions for iOS
+    if (Platform.isIOS) {
+      await _requestIOSPermissions();
+    }
   }
 
   static Future<void> _createNotificationChannel() async {
@@ -57,50 +60,21 @@ class NotificationService {
         ?.createNotificationChannel(channel);
   }
 
-  static Future<void> _initializeFirebaseMessaging() async {
-    // Request iOS permissions
-    NotificationSettings settings =
-        await _firebaseMessaging.requestPermission();
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('User granted permission');
-    } else if (settings.authorizationStatus ==
-        AuthorizationStatus.provisional) {
-      print('User granted provisional permission');
-    } else {
-      print('User declined or has not accepted permission');
-    }
-
-    // Print FCM token
-    String? token = await _firebaseMessaging.getToken();
-    print('FCM Token: $token');
-
-    // Foreground message handler
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // Background tap handler
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundTap);
+  static Future<void> _requestIOSPermissions() async {
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
     print('Notification tapped: ${response.payload}');
     // Navigate or handle action
-  }
-
-  static void _handleForegroundMessage(RemoteMessage message) {
-    print('Foreground message: ${message.notification?.title}');
-    if (message.notification != null) {
-      showNotification(
-        title: message.notification!.title ?? AppConfig.appName,
-        body: message.notification!.body ?? '',
-        payload: message.data.toString(),
-      );
-    }
-  }
-
-  static void _handleBackgroundTap(RemoteMessage message) {
-    print('Background notification tapped: ${message.notification?.title}');
-    // Navigate or handle action based on message.data
+    // You can implement navigation logic here based on the payload
   }
 
   /// Show an immediate local notification
@@ -116,8 +90,13 @@ class NotificationService {
       channelDescription: AppConfig.notificationChannelDescription,
       importance: Importance.high,
       priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
     );
-    const iosDetails = DarwinNotificationDetails();
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
     const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
@@ -140,8 +119,13 @@ class NotificationService {
       channelDescription: AppConfig.notificationChannelDescription,
       importance: Importance.high,
       priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
     );
-    const iosDetails = DarwinNotificationDetails();
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
     const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
@@ -154,17 +138,62 @@ class NotificationService {
       tz.TZDateTime.from(scheduledDate, tz.local),
       details,
       payload: payload,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dateAndTime,
     );
   }
 
-  /// Retrieve the current FCM token
-  static Future<String?> getFCMToken() async {
-    return _firebaseMessaging.getToken();
+  /// Schedule recurring notifications for course reminders
+  static Future<void> scheduleRecurringNotification({
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    String? payload,
+  }) async {
+    final id = DateTime.now().microsecondsSinceEpoch % 100000;
+    const androidDetails = AndroidNotificationDetails(
+      AppConfig.notificationChannelId,
+      AppConfig.notificationChannelName,
+      channelDescription: AppConfig.notificationChannelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      details,
+      payload: payload,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 
-  /// Stream for token refresh events
-  static Stream<String> get onTokenRefresh => _firebaseMessaging.onTokenRefresh;
+  /// Cancel a specific notification
+  static Future<void> cancelNotification(int id) async {
+    await _notifications.cancel(id);
+  }
+
+  /// Cancel all scheduled notifications
+  static Future<void> cancelAllNotifications() async {
+    await _notifications.cancelAll();
+  }
+
+  /// Get pending notifications
+  static Future<List<PendingNotificationRequest>>
+      getPendingNotifications() async {
+    return await _notifications.pendingNotificationRequests();
+  }
 }

@@ -21,7 +21,7 @@ class DatabaseHelper {
 
   static Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), _databaseName);
-    return await openDatabase(
+    return openDatabase(
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
@@ -112,46 +112,49 @@ class DatabaseHelper {
     }
   }
 
-  // Helper methods
+  // Generic insert method
   static Future<int> insert(String table, Map<String, dynamic> values) async {
-    final db = await database;
-    return await db.insert(table, values);
+    Database db = await database;
+    return db.insert(table, values);
   }
 
+  // Generic query method
   static Future<List<Map<String, dynamic>>> query(
     String table, {
+    List<String>? columns,
     String? where,
     List<dynamic>? whereArgs,
     String? orderBy,
-    int? limit,
   }) async {
-    final db = await database;
-    return await db.query(
+    Database db = await database;
+    return db.query(
       table,
+      columns: columns,
       where: where,
       whereArgs: whereArgs,
       orderBy: orderBy,
-      limit: limit,
     );
   }
 
+  // Generic update method
   static Future<int> update(
     String table,
     Map<String, dynamic> values, {
     String? where,
     List<dynamic>? whereArgs,
   }) async {
-    final db = await database;
-    return await db.update(table, values, where: where, whereArgs: whereArgs);
+    Database db = await database;
+    return db.update(table, values, where: where, whereArgs: whereArgs);
   }
 
+  // Generic delete method
   static Future<int> delete(
     String table, {
     String? where,
     List<dynamic>? whereArgs,
   }) async {
-    final db = await database;
-    return await db.delete(table, where: where, whereArgs: whereArgs);
+    Database db = await database;
+    return db.delete(table, where: where, whereArgs: whereArgs);
   }
 
   static Future<void> clearAllTables() async {

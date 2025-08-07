@@ -4,9 +4,9 @@ import { logger } from '../config/logger.js';
 
 // Email templates
 const emailTemplates = {
-    welcome: {
-        subject: 'Welcome to AttendKal! 🎉',
-        html: `
+  welcome: {
+    subject: 'Welcome to AttendKal! 🎉',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Welcome to AttendKal!</h1>
@@ -38,11 +38,11 @@ const emailTemplates = {
         </div>
       </div>
     `
-    },
+  },
 
-    'attendance-reminder': {
-        subject: 'Class Reminder: {{courseName}} starts in 15 minutes! ⏰',
-        html: `
+  'attendance-reminder': {
+    subject: 'Class Reminder: {{courseName}} starts in 15 minutes! ⏰',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #ff6b6b; padding: 20px; text-align: center;">
           <h1 style="color: white; margin: 0;">⏰ Class Reminder</h1>
@@ -69,11 +69,11 @@ const emailTemplates = {
         </div>
       </div>
     `
-    },
+  },
 
-    'weekly-report': {
-        subject: 'Your Weekly Attendance Report 📊',
-        html: `
+  'weekly-report': {
+    subject: 'Your Weekly Attendance Report 📊',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #4ecdc4 0%, #26d0ce 100%); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">📊 Weekly Report</h1>
@@ -117,11 +117,11 @@ const emailTemplates = {
         </div>
       </div>
     `
-    },
+  },
 
-    'password-reset': {
-        subject: 'Reset Your AttendKal Password 🔒',
-        html: `
+  'password-reset': {
+    subject: 'Reset Your AttendKal Password 🔒',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f39c12; padding: 20px; text-align: center;">
           <h1 style="color: white; margin: 0;">🔒 Password Reset</h1>
@@ -143,169 +143,169 @@ const emailTemplates = {
         </div>
       </div>
     `
-    }
+  }
 };
 
 class EmailService {
-    constructor() {
-        this.transporter = null;
-        this.initializeTransporter();
+  constructor() {
+    this.transporter = null;
+    this.initializeTransporter();
+  }
+
+  async initializeTransporter() {
+    try {
+      // Different transport configurations based on environment
+      let transportConfig;
+
+      if (config.server.nodeEnv === 'production') {
+        // Production: Use AWS SES or SendGrid
+        transportConfig = {
+          host: config.email.host,
+          port: config.email.port,
+          secure: true,
+          auth: {
+            user: config.email.user,
+            pass: config.email.password,
+          },
+        };
+      } else {
+        // Development: Use Ethereal for testing
+        const testAccount = await nodemailer.createTestAccount();
+        transportConfig = {
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass,
+          },
+        };
+      }
+
+      this.transporter = nodemailer.createTransport(transportConfig);
+
+      // Verify connection
+      await this.transporter.verify();
+      logger.info('Email service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize email service:', error);
     }
+  }
 
-    async initializeTransporter() {
-        try {
-            // Different transport configurations based on environment
-            let transportConfig;
+  async sendEmail({ to, subject, template, data, attachments = [] }) {
+    try {
+      if (!this.transporter) {
+        throw new Error('Email transporter not initialized');
+      }
 
-            if (config.server.nodeEnv === 'production') {
-                // Production: Use AWS SES or SendGrid
-                transportConfig = {
-                    host: config.email.host,
-                    port: config.email.port,
-                    secure: true,
-                    auth: {
-                        user: config.email.user,
-                        pass: config.email.password,
-                    },
-                };
-            } else {
-                // Development: Use Ethereal for testing
-                const testAccount = await nodemailer.createTestAccount();
-                transportConfig = {
-                    host: 'smtp.ethereal.email',
-                    port: 587,
-                    secure: false,
-                    auth: {
-                        user: testAccount.user,
-                        pass: testAccount.pass,
-                    },
-                };
-            }
+      let html, emailSubject;
 
-            this.transporter = nodemailer.createTransport(transportConfig);
+      if (template && emailTemplates[template]) {
+        // Use template
+        html = this.compileTemplate(emailTemplates[template].html, data);
+        emailSubject = this.compileTemplate(emailTemplates[template].subject, data);
+      } else {
+        // Direct HTML
+        html = data.html || '';
+        emailSubject = subject;
+      }
 
-            // Verify connection
-            await this.transporter.verify();
-            logger.info('Email service initialized successfully');
-        } catch (error) {
-            logger.error('Failed to initialize email service:', error);
-        }
+      const mailOptions = {
+        from: `"AttendKal" <${config.email.from}>`,
+        to,
+        subject: emailSubject,
+        html,
+        attachments,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+
+      if (config.server.nodeEnv === 'development') {
+        logger.info('Preview URL:', nodemailer.getTestMessageUrl(result));
+      }
+
+      logger.info(`Email sent successfully to ${to}`);
+      return result;
+    } catch (error) {
+      logger.error(`Failed to send email to ${to}:`, error);
+      throw error;
     }
+  }
 
-    async sendEmail({ to, subject, template, data, attachments = [] }) {
-        try {
-            if (!this.transporter) {
-                throw new Error('Email transporter not initialized');
-            }
+  compileTemplate(template, data) {
+    let compiled = template;
 
-            let html, emailSubject;
+    // Simple template compilation (replace {{variable}} with data)
+    Object.keys(data || {}).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      compiled = compiled.replace(regex, data[key] || '');
+    });
 
-            if (template && emailTemplates[template]) {
-                // Use template
-                html = this.compileTemplate(emailTemplates[template].html, data);
-                emailSubject = this.compileTemplate(emailTemplates[template].subject, data);
-            } else {
-                // Direct HTML
-                html = data.html || '';
-                emailSubject = subject;
-            }
-
-            const mailOptions = {
-                from: `"AttendKal" <${config.email.from}>`,
-                to,
-                subject: emailSubject,
-                html,
-                attachments,
-            };
-
-            const result = await this.transporter.sendMail(mailOptions);
-
-            if (config.server.nodeEnv === 'development') {
-                logger.info('Preview URL:', nodemailer.getTestMessageUrl(result));
-            }
-
-            logger.info(`Email sent successfully to ${to}`);
-            return result;
-        } catch (error) {
-            logger.error(`Failed to send email to ${to}:`, error);
-            throw error;
-        }
-    }
-
-    compileTemplate(template, data) {
-        let compiled = template;
-
-        // Simple template compilation (replace {{variable}} with data)
-        Object.keys(data || {}).forEach(key => {
+    // Handle arrays (for course breakdown in weekly report)
+    if (data && data.courses) {
+      const coursePattern = /{{#each courses}}(.*?){{\/each}}/gs;
+      compiled = compiled.replace(coursePattern, (match, content) => {
+        return data.courses.map(course => {
+          let courseHtml = content;
+          Object.keys(course).forEach(key => {
             const regex = new RegExp(`{{${key}}}`, 'g');
-            compiled = compiled.replace(regex, data[key] || '');
-        });
-
-        // Handle arrays (for course breakdown in weekly report)
-        if (data && data.courses) {
-            const coursePattern = /{{#each courses}}(.*?){{\/each}}/gs;
-            compiled = compiled.replace(coursePattern, (match, content) => {
-                return data.courses.map(course => {
-                    let courseHtml = content;
-                    Object.keys(course).forEach(key => {
-                        const regex = new RegExp(`{{${key}}}`, 'g');
-                        courseHtml = courseHtml.replace(regex, course[key] || '');
-                    });
-                    return courseHtml;
-                }).join('');
-            });
-        }
-
-        return compiled;
+            courseHtml = courseHtml.replace(regex, course[key] || '');
+          });
+          return courseHtml;
+        }).join('');
+      });
     }
 
-    // Predefined email methods
-    async sendWelcomeEmail(userEmail, userName) {
-        return this.sendEmail({
-            to: userEmail,
-            template: 'welcome',
-            data: {
-                userName,
-                appUrl: config.app.frontendUrl,
-            },
-        });
-    }
+    return compiled;
+  }
 
-    async sendAttendanceReminder(userEmail, courseName, scheduleTime, room = '') {
-        return this.sendEmail({
-            to: userEmail,
-            template: 'attendance-reminder',
-            data: {
-                courseName,
-                scheduleTime,
-                room,
-                appUrl: config.app.frontendUrl,
-            },
-        });
-    }
+  // Predefined email methods
+  async sendWelcomeEmail(userEmail, userName) {
+    return this.sendEmail({
+      to: userEmail,
+      template: 'welcome',
+      data: {
+        userName,
+        appUrl: config.app.frontendUrl,
+      },
+    });
+  }
 
-    async sendWeeklyReport(userEmail, reportData) {
-        return this.sendEmail({
-            to: userEmail,
-            template: 'weekly-report',
-            data: {
-                ...reportData,
-                appUrl: config.app.frontendUrl,
-            },
-        });
-    }
+  async sendAttendanceReminder(userEmail, courseName, scheduleTime, room = '') {
+    return this.sendEmail({
+      to: userEmail,
+      template: 'attendance-reminder',
+      data: {
+        courseName,
+        scheduleTime,
+        room,
+        appUrl: config.app.frontendUrl,
+      },
+    });
+  }
 
-    async sendPasswordReset(userEmail, resetToken) {
-        const resetUrl = `${config.app.frontendUrl}/reset-password?token=${resetToken}`;
+  async sendWeeklyReport(userEmail, reportData) {
+    return this.sendEmail({
+      to: userEmail,
+      template: 'weekly-report',
+      data: {
+        ...reportData,
+        appUrl: config.app.frontendUrl,
+      },
+    });
+  }
 
-        return this.sendEmail({
-            to: userEmail,
-            template: 'password-reset',
-            data: {
-                resetUrl,
-            },
-        });
-    }
+  async sendPasswordReset(userEmail, resetToken) {
+    const resetUrl = `${config.app.frontendUrl}/reset-password?token=${resetToken}`;
+
+    return this.sendEmail({
+      to: userEmail,
+      template: 'password-reset',
+      data: {
+        resetUrl,
+      },
+    });
+  }
 }
 
 // Export singleton instance

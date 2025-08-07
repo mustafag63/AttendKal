@@ -260,11 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       title: 'Edit Profile',
                       subtitle: 'Update your personal information',
                       onTap: () {
-                        // TODO: Navigate to edit profile page
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Edit Profile - Coming Soon!')),
-                        );
+                        // TODO(profile): Navigate to edit profile page
                       },
                     ),
                     const Divider(height: 1),
@@ -273,12 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       title: 'Notifications',
                       subtitle: 'Manage notification preferences',
                       onTap: () {
-                        // TODO: Navigate to notifications settings
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'Notifications Settings - Coming Soon!')),
-                        );
+                        // TODO(notifications): Navigate to notifications settings
                       },
                     ),
                     const Divider(height: 1),
@@ -287,12 +278,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       title: 'Security',
                       subtitle: 'Change password and security settings',
                       onTap: () {
-                        // TODO: Navigate to security settings
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Security Settings - Coming Soon!')),
-                        );
+                        // TODO(security): Navigate to security settings
                       },
                     ),
                     const Divider(height: 1),
@@ -301,11 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       title: 'Help & Support',
                       subtitle: 'Get help and contact support',
                       onTap: () {
-                        // TODO: Navigate to help page
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Help & Support - Coming Soon!')),
-                        );
+                        // TODO(help): Navigate to help page
                       },
                     ),
                     const Divider(height: 1),

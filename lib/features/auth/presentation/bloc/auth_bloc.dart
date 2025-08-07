@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -73,14 +73,11 @@ class AuthError extends AuthState {
 
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final ApiClient _apiClient;
+  final ApiService _apiService;
 
   AuthBloc({
-    required ApiClient apiClient,
-    dynamic loginUseCase,
-    dynamic registerUseCase,
-    dynamic logoutUseCase,
-  })  : _apiClient = apiClient,
+    required ApiService apiService,
+  })  : _apiService = apiService,
         super(AuthInitial()) {
     on<AuthInitialEvent>(_onInitial);
     on<AuthCheckStatusEvent>(_onCheckStatus);
@@ -89,73 +86,81 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutEvent>(_onLogout);
   }
 
-  void _onInitial(AuthInitialEvent event, Emitter<AuthState> emit) async {
+  Future<void> _onInitial(
+      AuthInitialEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
-    // Check if user is already logged in
-    final response = await _apiClient.getCurrentUser();
-    if (response.success && response.data != null) {
-      emit(AuthAuthenticated(response.data!));
-    } else {
+    try {
+      if (_apiService.isAuthenticated) {
+        final user = await _apiService.getCurrentUser();
+        emit(AuthAuthenticated(user));
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } catch (e) {
       emit(AuthUnauthenticated());
     }
   }
 
-  void _onCheckStatus(
+  Future<void> _onCheckStatus(
       AuthCheckStatusEvent event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    final response = await _apiClient.getCurrentUser();
-    if (response.success && response.data != null) {
-      emit(AuthAuthenticated(response.data!));
-    } else {
+    try {
+      if (_apiService.isAuthenticated) {
+        final user = await _apiService.getCurrentUser();
+        emit(AuthAuthenticated(user));
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } catch (e) {
       emit(AuthUnauthenticated());
     }
   }
 
-  void _onLogin(AuthLoginEvent event, Emitter<AuthState> emit) async {
+  Future<void> _onLogin(AuthLoginEvent event, Emitter<AuthState> emit) async {
+    print('🔐 Login attempt for: ${event.email}');
     emit(AuthLoading());
     try {
-      final response = await _apiClient.login(
-        email: event.email,
-        password: event.password,
-      );
-
-      if (response.success && response.data != null) {
-        emit(AuthAuthenticated(response.data!));
-      } else {
-        emit(AuthError(response.error ?? 'Login failed'));
-      }
+      final result = await _apiService.login(event.email, event.password);
+      print('✅ Login successful for: ${event.email}');
+      print('📱 User data: ${result['user']}');
+      emit(AuthAuthenticated(result['user']));
+    } on ApiError catch (e) {
+      print('❌ Login failed with ApiError: ${e.message}');
+      emit(AuthError(e.message ?? 'Login failed'));
     } catch (e) {
-      emit(AuthError('An unexpected error occurred: ${e.toString()}'));
+      print('❌ Login failed with unexpected error: $e');
+      emit(AuthError('An unexpected error occurred'));
     }
   }
 
-  void _onRegister(AuthRegisterEvent event, Emitter<AuthState> emit) async {
+  Future<void> _onRegister(
+      AuthRegisterEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      final response = await _apiClient.register(
-        name: event.name,
-        email: event.email,
-        password: event.password,
-        confirmPassword: event.confirmPassword,
-      );
-
-      if (response.success && response.data != null) {
-        emit(AuthAuthenticated(response.data!));
-      } else {
-        emit(AuthError(response.error ?? 'Registration failed'));
+      if (event.password != event.confirmPassword) {
+        emit(AuthError('Passwords do not match'));
+        return;
       }
+
+      final result = await _apiService.register(
+        event.name,
+        event.email,
+        event.password,
+      );
+      emit(AuthAuthenticated(result['user']));
+    } on ApiError catch (e) {
+      emit(AuthError(e.message ?? 'Registration failed'));
     } catch (e) {
-      emit(AuthError('An unexpected error occurred: ${e.toString()}'));
+      emit(AuthError('An unexpected error occurred'));
     }
   }
 
-  void _onLogout(AuthLogoutEvent event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
+  Future<void> _onLogout(AuthLogoutEvent event, Emitter<AuthState> emit) async {
     try {
-      await _apiClient.logout();
+      await _apiService.logout();
+    } catch (e) {
+      // Continue with logout even if API call fails
+    } finally {
       emit(AuthUnauthenticated());
-    } catch (e) {
-      emit(AuthUnauthenticated()); // Always logout on error
     }
   }
 }

@@ -1,16 +1,15 @@
 import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
-import { subscriptionMaintenanceMiddleware } from '../middleware/maintenanceMiddleware.js';
 import {
-    getSubscription,
-    upgradeSubscription,
-    cancelSubscription,
+  getSubscription,
+  upgradeSubscription,
+  cancelSubscription,
 } from '../controllers/subscriptionController.js';
 
 const router = express.Router();
 
-// Apply maintenance middleware first
-router.use(subscriptionMaintenanceMiddleware);
+// Maintenance middleware can be added here if needed
+// router.use(featureMaintenanceMode('subscription'));
 
 // All subscription routes require authentication
 router.use(authenticate);

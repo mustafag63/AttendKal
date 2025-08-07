@@ -1,63 +1,89 @@
 import { logger } from '../config/logger.js';
 
-/**
- * Maintenance middleware for subscription routes
- * Returns 503 Service Unavailable when maintenance mode is enabled
- */
-export const subscriptionMaintenanceMiddleware = (req, res, next) => {
-    const maintenanceMode = process.env.SUBSCRIPTION_MAINTENANCE === 'true' || false;
+// Maintenance mode middleware
+export const maintenanceMode = (req, res, next) => {
+  const isMaintenanceMode = process.env.MAINTENANCE_MODE === 'true';
+  const maintenanceMessage = process.env.MAINTENANCE_MESSAGE || 'System is under maintenance. Please try again later.';
 
-    if (maintenanceMode) {
-        logger.warn(`Subscription maintenance mode active - blocking request to ${req.path}`, {
-            path: req.path,
-            method: req.method,
-            ip: req.ip,
-            userAgent: req.headers['user-agent']
-        });
+  // Allow health checks during maintenance
+  if (req.path === '/health' || req.path.startsWith('/api-docs')) {
+    return next();
+  }
 
-        return res.status(503).json({
-            success: false,
-            message: 'Abonelik servisi geçici bakımda.',
-            error: 'SERVICE_MAINTENANCE',
-            details: {
-                service: 'subscription',
-                status: 'maintenance',
-                estimatedReturnTime: '1-2 saat',
-            },
-            retryAfter: 3600 // 1 hour in seconds
-        });
+  // Allow admin access during maintenance
+  if (req.user && req.user.role === 'ADMIN') {
+    return next();
+  }
+
+  if (isMaintenanceMode) {
+    logger.info('Maintenance mode request blocked', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method,
+      userAgent: req.get('User-Agent'),
+    });
+
+    return res.status(503).json({
+      status: 'maintenance',
+      message: maintenanceMessage,
+      retryAfter: 3600, // 1 hour
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  next();
+};
+
+// Feature-specific maintenance middleware
+export const featureMaintenanceMode = (feature) => {
+  return (req, res, next) => {
+    const maintenanceKey = `${feature.toUpperCase()}_MAINTENANCE`;
+    const isFeatureDown = process.env[maintenanceKey] === 'true';
+
+    if (isFeatureDown) {
+      const message = process.env[`${maintenanceKey}_MESSAGE`] ||
+        `${feature} service is temporarily unavailable.`;
+
+      logger.info(`${feature} maintenance mode`, {
+        ip: req.ip,
+        path: req.path,
+        method: req.method,
+        feature: feature,
+      });
+
+      return res.status(503).json({
+        status: 'service_unavailable',
+        message: message,
+        feature: feature,
+        retryAfter: 3600,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     next();
+  };
 };
 
-/**
- * Generic maintenance middleware for any feature
- */
-export const createMaintenanceMiddleware = (featureName, envVar) => {
-    return (req, res, next) => {
-        const maintenanceMode = process.env[envVar] === 'true' || false;
+// Check service health for maintenance decisions
+export const healthCheck = (req, res, next) => {
+  const checks = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+  };
 
-        if (maintenanceMode) {
-            logger.warn(`${featureName} maintenance mode active - blocking request to ${req.path}`, {
-                feature: featureName,
-                path: req.path,
-                method: req.method,
-                ip: req.ip
-            });
+  // Add maintenance status
+  checks.maintenance = {
+    enabled: process.env.MAINTENANCE_MODE === 'true',
+    features: {
+      subscription: process.env.SUBSCRIPTION_MAINTENANCE === 'true',
+      notifications: process.env.NOTIFICATIONS_MAINTENANCE === 'true',
+      analytics: process.env.ANALYTICS_MAINTENANCE === 'true',
+    },
+  };
 
-            return res.status(503).json({
-                success: false,
-                message: `${featureName} servisi geçici bakımda.`,
-                error: 'SERVICE_MAINTENANCE',
-                details: {
-                    service: featureName.toLowerCase(),
-                    status: 'maintenance',
-                },
-                retryAfter: 3600
-            });
-        }
-
-        next();
-    };
+  res.status(200).json(checks);
 }; 

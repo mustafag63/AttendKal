@@ -1,157 +1,173 @@
 # AttendKal Backend API
 
-Modern, secure, and scalable Node.js + Express backend for AttendKal student attendance tracking system.
+A professional Node.js Express API server for the AttendKal student attendance tracking system. This backend provides a complete RESTful API with JWT authentication, PostgreSQL database with Prisma ORM, and comprehensive features for managing courses, attendance, and subscriptions.
 
-## 🚀 **Tech Stack**
+## 🏗️ Architecture
 
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: JWT + Refresh Tokens
-- **Security**: Helmet, CORS, Rate Limiting
-- **Logging**: Winston
+- **Framework**: Node.js with Express.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT-based authentication with refresh tokens
 - **Validation**: Express Validator
-- **Testing**: Jest + Supertest
+- **Security**: Helmet, CORS, Rate Limiting
+- **Monitoring**: Prometheus metrics, Winston logging
+- **Documentation**: Swagger/OpenAPI
+- **Testing**: Jest with Supertest
+- **Process Management**: PM2 with ecosystem config
 
-## 📁 **Project Structure**
+## 🚀 Features
 
-```
-backend/
-├── src/
-│   ├── config/         # Configuration files
-│   ├── controllers/    # Route controllers
-│   ├── middleware/     # Custom middleware
-│   ├── models/         # Database models (Prisma)
-│   ├── routes/         # API routes
-│   ├── services/       # Business logic services
-│   ├── utils/          # Utility functions
-│   └── server.js       # Main server file
-├── prisma/
-│   ├── schema.prisma   # Database schema
-│   └── seed.js         # Database seeding
-├── tests/              # Test files
-├── logs/               # Log files
-└── package.json
-```
+### Authentication & Authorization
+- JWT-based authentication with access and refresh tokens
+- Role-based access control (Student, Teacher, Admin)
+- Password encryption with bcrypt
+- Session management with automatic token refresh
 
-## 🛠️ **Setup & Installation**
+### Course Management
+- Create, read, update, delete courses
+- Course scheduling with time slots
+- Search and filtering capabilities
+- User-based course isolation
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 12+
-- npm or yarn
+### Attendance Tracking
+- Mark attendance with various statuses (Present, Absent, Late, Excused)
+- GPS location tracking for attendance verification
+- Attendance statistics and reporting
+- Date-based attendance queries
 
-### 1. Install Dependencies
+### Subscription Management
+- Free, Pro, and Premium subscription tiers
+- Course limits based on subscription
+- Subscription upgrade functionality
+- Payment integration ready (Stripe compatible)
+
+### Additional Features
+- Comprehensive error handling and validation
+- API rate limiting and security
+- Health checks and monitoring
+- Automatic API documentation
+- Background job processing (Bull queues)
+- File upload support (AWS S3 integration)
+
+## 📋 Prerequisites
+
+- Node.js 18.0.0 or higher
+- PostgreSQL 12.0 or higher
+- npm 8.0.0 or higher
+- Redis (optional, for background jobs)
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd AttendKal/backend
+   ```
+
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-### 2. Environment Configuration
+3. **Set up environment variables**
 ```bash
 cp .env.example .env
-```
+   # Edit .env with your configuration
+   ```
 
-Edit `.env` file with your configuration:
-```env
-NODE_ENV=development
-PORT=3000
-DATABASE_URL="postgresql://username:password@localhost:5432/attendkal"
-JWT_SECRET=your-super-secret-jwt-key
-JWT_REFRESH_SECRET=your-super-secret-refresh-key
-```
-
-### 3. Database Setup
+4. **Set up the database**
 ```bash
 # Generate Prisma client
 npm run db:generate
 
-# Create and migrate database
+   # Run database migrations
 npm run db:migrate
 
-# Seed database (optional)
+   # (Optional) Seed the database
 npm run db:seed
 ```
 
-### 4. Start Development Server
+## ⚙️ Environment Configuration
+
+Create a `.env` file with the following variables:
+
+```env
+# Database
+DATABASE_URL="postgresql://username:password@localhost:5432/attendkal_db"
+
+# JWT Configuration
+JWT_SECRET="your-super-secret-jwt-key"
+JWT_EXPIRE="24h"
+JWT_REFRESH_SECRET="your-super-secret-refresh-key"
+JWT_REFRESH_EXPIRE="30d"
+
+# Server
+NODE_ENV="development"
+PORT=3000
+
+# Security
+BCRYPT_ROUNDS=12
+CORS_ORIGIN="http://localhost:3000"
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Optional: Email, AWS S3, Redis configurations
+```
+
+## 🏃‍♂️ Running the Application
+
+### Development Mode
 ```bash
 npm run dev
 ```
 
-## 📚 **API Endpoints**
+### Production Mode
+```bash
+npm start
+```
+
+### With PM2 (Production)
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.cjs
+```
+
+## 📚 API Documentation
+
+Once the server is running, access the interactive API documentation at:
+- **Swagger UI**: `http://localhost:3000/api-docs`
+- **API Info**: `http://localhost:3000/api`
+- **Health Check**: `http://localhost:3000/health`
+
+## 🔒 API Endpoints
 
 ### Authentication
-```http
-POST   /api/auth/register       # Register new user
-POST   /api/auth/login          # Login user
-POST   /api/auth/logout         # Logout user
-POST   /api/auth/refresh-token  # Refresh access token
-GET    /api/auth/me             # Get current user
-PATCH  /api/auth/update-password # Update password
-PATCH  /api/auth/update-profile  # Update profile
-```
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/refresh-token` - Refresh access token
+- `GET /api/auth/me` - Get current user profile
+- `PATCH /api/auth/update-password` - Update password
+- `PATCH /api/auth/update-profile` - Update user profile
 
 ### Courses
-```http
-GET    /api/courses             # Get user courses
-POST   /api/courses             # Create course
-GET    /api/courses/:id         # Get course by ID
-PUT    /api/courses/:id         # Update course
-DELETE /api/courses/:id         # Delete course
-```
+- `GET /api/courses` - Get user courses
+- `POST /api/courses` - Create new course
+- `GET /api/courses/:id` - Get course details
+- `PUT /api/courses/:id` - Update course
+- `DELETE /api/courses/:id` - Delete course
 
 ### Attendance
-```http
-GET    /api/attendance          # Get attendance records
-POST   /api/attendance          # Mark attendance
-GET    /api/attendance/course/:id # Get course attendance
-GET    /api/attendance/stats/:id  # Get attendance statistics
-```
+- `GET /api/attendance` - Get attendance records
+- `POST /api/attendance` - Mark attendance
+- `GET /api/attendance/stats` - Get attendance statistics
+- `GET /api/attendance/reports` - Generate attendance reports
 
 ### Subscriptions
-```http
-GET    /api/subscriptions       # Get subscription status
-POST   /api/subscriptions/upgrade # Upgrade subscription
-POST   /api/subscriptions/cancel  # Cancel subscription
-```
+- `GET /api/subscriptions` - Get subscription status
+- `POST /api/subscriptions/upgrade` - Upgrade subscription
+- `GET /api/subscriptions/current` - Get current subscription details
 
-### Users (Admin only)
-```http
-GET    /api/users               # Get all users
-GET    /api/users/:id           # Get user by ID
-PATCH  /api/users/:id/activate  # Activate user
-PATCH  /api/users/:id/deactivate # Deactivate user
-```
-
-## 🔒 **Security Features**
-
-- **JWT Authentication** with refresh tokens
-- **Password hashing** with bcrypt
-- **Rate limiting** to prevent abuse
-- **CORS** configuration
-- **Helmet.js** for security headers
-- **Input validation** with express-validator
-- **SQL injection** protection with Prisma
-- **XSS protection** built-in
-
-## 📊 **Database Schema**
-
-### Users
-- ID, email, password, name, avatar, role
-- Timestamps and soft delete support
-
-### Courses
-- Course information, schedule, instructor
-- User ownership and color coding
-
-### Attendance
-- Date, status (Present/Absent/Late/Excused)
-- Course and user relationships
-
-### Subscriptions
-- Free/Pro plans with course limits
-- Payment integration ready
-
-## 🧪 **Testing**
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -160,79 +176,96 @@ npm test
 # Run tests in watch mode
 npm run test:watch
 
-# Generate coverage report
+# Run tests with coverage
 npm run test:coverage
 ```
 
-## 📝 **Development Scripts**
+## 🚀 Deployment
+
+### Docker Deployment
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+```
+
+### Manual Deployment
+1. Set up PostgreSQL database
+2. Configure environment variables
+3. Run database migrations
+4. Start the application with PM2
+
+## 📊 Monitoring
+
+- **Metrics**: Available at `/metrics` (Prometheus format)
+- **Health Check**: Available at `/health`
+- **Logs**: Winston logging with configurable levels
+- **Performance**: Express rate limiting and monitoring
+
+## 🔧 Database Management
 
 ```bash
-npm run dev          # Start development server
-npm start            # Start production server
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix ESLint errors
-npm run format       # Format code with Prettier
-npm run db:generate  # Generate Prisma client
-npm run db:migrate   # Run database migrations
-npm run db:studio    # Open Prisma Studio
-npm run db:seed      # Seed database
+# Generate Prisma client
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+
+# Push schema changes
+npm run db:push
+
+# Open Prisma Studio
+npm run db:studio
+
+# Reset database
+npm run db:reset
 ```
 
-## 🚀 **Deployment**
+## 📁 Project Structure
 
-### Docker (Recommended)
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run db:generate
-EXPOSE 3000
-CMD ["npm", "start"]
+```
+src/
+├── config/           # Configuration files
+├── controllers/      # Route controllers
+├── dto/             # Data transfer objects
+├── middleware/      # Express middleware
+├── routes/          # API routes
+├── services/        # Business logic
+├── utils/           # Utility functions
+├── server.js        # Main server file
+tests/
+├── unit/            # Unit tests
+├── integration/     # Integration tests
+└── setup.js         # Test setup
+prisma/
+├── schema.prisma    # Database schema
+└── migrations/      # Database migrations
 ```
 
-### Environment Variables for Production
-```env
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=postgresql://...
-JWT_SECRET=strong-production-secret
-JWT_REFRESH_SECRET=strong-refresh-secret
-CORS_ORIGIN=https://yourdomain.com
-```
-
-## 📈 **Performance Optimizations**
-
-- **Database indexing** for frequently queried fields
-- **Connection pooling** with Prisma
-- **Response compression** with gzip
-- **Logging optimization** for production
-- **Memory leak prevention** with proper cleanup
-
-## 🔧 **Monitoring & Logging**
-
-- **Winston** for structured logging
-- **Request/Response** logging
-- **Error tracking** with stack traces
-- **Performance metrics** ready for integration
-
-## 🤝 **Contributing**
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new features
+5. Run the test suite
+6. Submit a pull request
 
-## 📄 **License**
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
-## 🆘 **Support**
+## 🆘 Support
 
-For support, email support@attendkal.com or join our Slack channel.
+For support and questions:
+- Check the API documentation at `/api-docs`
+- Review the logs for error details
+- Ensure all environment variables are properly configured
+- Verify database connectivity
 
----
+## 🔄 Version History
 
-**Made with ❤️ by the AttendKal Team** 
+- **v1.0.0**: Initial release with complete API functionality
+  - JWT authentication system
+  - Course and attendance management
+  - Subscription handling
+  - Comprehensive security and monitoring 

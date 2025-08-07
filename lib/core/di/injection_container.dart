@@ -14,7 +14,7 @@ import '../../features/subscription/presentation/bloc/subscription_bloc.dart';
 import '../database/database_helper.dart';
 import '../network/api_client.dart';
 import '../network/network_info.dart';
-import '../services/firebase_service.dart';
+import '../services/api_service.dart';
 
 final sl = GetIt.instance;
 
@@ -26,13 +26,16 @@ Future<void> initializeDependencies() async {
   final database = await DatabaseHelper.database;
   sl.registerLazySingleton<Database>(() => database);
 
-  sl.registerLazySingleton(() => Dio());
-  sl.registerLazySingleton(() => Connectivity());
+  sl.registerLazySingleton(Dio.new);
+  sl.registerLazySingleton(Connectivity.new);
 
-  // Core
+  // Core services
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton<ApiClient>(() => ApiClient());
-  sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
+  sl.registerLazySingleton<ApiService>(() => ApiService());
+
+  // Initialize API service
+  await sl<ApiService>().initialize();
 
   // Blocs - with real dependencies
   _registerBlocs();
@@ -41,25 +44,25 @@ Future<void> initializeDependencies() async {
 void _registerBlocs() {
   sl.registerFactory(
     () => AuthBloc(
-      apiClient: sl<ApiClient>(),
+      apiService: sl<ApiService>(),
     ),
   );
 
   sl.registerFactory(
     () => CoursesBloc(
-      apiClient: sl<ApiClient>(),
+      apiService: sl<ApiService>(),
     ),
   );
 
   sl.registerFactory(
     () => AttendanceBloc(
-      apiClient: sl<ApiClient>(),
+      apiService: sl<ApiService>(),
     ),
   );
 
   sl.registerFactory(
     () => SubscriptionBloc(
-      apiClient: sl<ApiClient>(),
+      apiService: sl<ApiService>(),
     ),
   );
 }

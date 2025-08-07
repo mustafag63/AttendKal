@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -47,9 +49,14 @@ class _SplashPageState extends State<SplashPage>
   void _navigateToNext() {
     Future.delayed(const Duration(milliseconds: 3000), () {
       if (mounted) {
-        // Check if user is logged in
-        // For now, navigate to login
-        context.go('/login');
+        final authBloc = context.read<AuthBloc>();
+        final authState = authBloc.state;
+        
+        if (authState is AuthAuthenticated) {
+          context.go('/home');
+        } else {
+          context.go('/login');
+        }
       }
     });
   }
@@ -84,7 +91,7 @@ class _SplashPageState extends State<SplashPage>
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -113,7 +120,7 @@ class _SplashPageState extends State<SplashPage>
                       'Smart Attendance Tracking',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w300,
                       ),
                     ),
@@ -125,7 +132,7 @@ class _SplashPageState extends State<SplashPage>
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.8),
+                          Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ),

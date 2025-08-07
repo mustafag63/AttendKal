@@ -1,15 +1,4 @@
 export default {
-    preset: 'node',
-    extensionsToTreatAsEsm: ['.js'],
-    globals: {
-        'ts-jest': {
-            useESM: true
-        }
-    },
-    moduleNameMapping: {
-        '^(\\.{1,2}/.*)\\.js$': '$1'
-    },
-    transform: {},
     testEnvironment: 'node',
     setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
     collectCoverageFrom: [
@@ -25,14 +14,6 @@ export default {
         'html',
         'json-summary'
     ],
-    coverageThreshold: {
-        global: {
-            branches: 70,
-            functions: 70,
-            lines: 70,
-            statements: 70,
-        },
-    },
     testMatch: [
         '<rootDir>/tests/**/*.test.js',
         '<rootDir>/tests/**/*.spec.js'

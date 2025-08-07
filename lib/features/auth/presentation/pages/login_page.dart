@@ -40,9 +40,12 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.white,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
+          print('🔐 Auth State Changed: ${state.runtimeType}');
           if (state is AuthAuthenticated) {
+            print('✅ User authenticated, navigating to home...');
             context.go('/home');
           } else if (state is AuthError) {
+            print('❌ Auth error: ${state.message}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -50,6 +53,8 @@ class _LoginPageState extends State<LoginPage> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
+          } else if (state is AuthLoading) {
+            print('⏳ Auth loading...');
           }
         },
         child: SafeArea(
