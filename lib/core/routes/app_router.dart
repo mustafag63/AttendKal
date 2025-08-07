@@ -9,6 +9,7 @@ import '../../features/courses/presentation/pages/add_course_page.dart';
 import '../../features/attendance/presentation/pages/attendance_page.dart';
 import '../../features/subscription/presentation/pages/subscription_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/analytics/presentation/pages/analytics_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -60,6 +61,13 @@ class AppRouter {
           final courseId = state.pathParameters['courseId']!;
           return AttendancePage(courseId: courseId);
         },
+      ),
+
+      // Analytics
+      GoRoute(
+        path: '/analytics',
+        name: 'analytics',
+        builder: (context, state) => const AnalyticsPage(),
       ),
 
       // Subscription

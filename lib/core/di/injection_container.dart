@@ -29,43 +29,37 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => Dio());
   sl.registerLazySingleton(() => Connectivity());
 
-    // Core
+  // Core
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton<ApiClient>(() => ApiClient());
   sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
-  
-  // Blocs - using placeholder implementations
+
+  // Blocs - with real dependencies
   _registerBlocs();
 }
 
 void _registerBlocs() {
   sl.registerFactory(
     () => AuthBloc(
-      loginUseCase: null,
-      registerUseCase: null,
-      logoutUseCase: null,
+      apiClient: sl<ApiClient>(),
     ),
   );
 
   sl.registerFactory(
     () => CoursesBloc(
-      getCoursesUseCase: null,
-      addCourseUseCase: null,
-      deleteCourseUseCase: null,
+      apiClient: sl<ApiClient>(),
     ),
   );
 
   sl.registerFactory(
     () => AttendanceBloc(
-      markAttendanceUseCase: null,
-      getAttendanceUseCase: null,
+      apiClient: sl<ApiClient>(),
     ),
   );
 
   sl.registerFactory(
     () => SubscriptionBloc(
-      getSubscriptionStatusUseCase: null,
-      upgradeSubscriptionUseCase: null,
+      apiClient: sl<ApiClient>(),
     ),
   );
 }

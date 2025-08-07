@@ -93,6 +93,7 @@ export const register = catchAsync(async (req, res, next) => {
         data: {
             userId: user.id,
             type: 'FREE',
+            isActive: true,
         },
     });
 

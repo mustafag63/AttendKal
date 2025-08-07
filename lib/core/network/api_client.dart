@@ -189,6 +189,21 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<void>> deleteCourse(String courseId) async {
+    try {
+      final response = await _dio.delete('/courses/$courseId');
+
+      if (response.data['status'] == 'success') {
+        return ApiResponse.success(null);
+      }
+
+      return ApiResponse.error(
+          response.data['message'] ?? 'Failed to delete course');
+    } on DioException catch (e) {
+      return ApiResponse.error(_handleDioError(e));
+    }
+  }
+
   // Attendance methods
   Future<ApiResponse<List<Map<String, dynamic>>>> getAttendance({
     String? courseId,

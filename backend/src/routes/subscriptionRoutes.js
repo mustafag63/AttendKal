@@ -1,30 +1,23 @@
 import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
+import {
+    getSubscription,
+    upgradeSubscription,
+    cancelSubscription,
+} from '../controllers/subscriptionController.js';
 
 const router = express.Router();
 
-router.use(authenticate); // All subscription routes require authentication
+// All subscription routes require authentication
+router.use(authenticate);
 
-router.get('/', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Get subscription status endpoint - to be implemented',
-        data: {},
-    });
-});
+// Get current subscription
+router.get('/', getSubscription);
 
-router.post('/upgrade', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Upgrade subscription endpoint - to be implemented',
-    });
-});
+// Upgrade subscription
+router.post('/upgrade', upgradeSubscription);
 
-router.post('/cancel', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Cancel subscription endpoint - to be implemented',
-    });
-});
+// Cancel subscription
+router.post('/cancel', cancelSubscription);
 
 export default router; 

@@ -1,39 +1,41 @@
 import express from 'express';
+import { body } from 'express-validator';
 import { authenticate } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validationMiddleware.js';
+import {
+    getAttendance,
+    markAttendance,
+    getAttendanceStats,
+    deleteAttendance,
+} from '../controllers/attendanceController.js';
 
 const router = express.Router();
 
-router.use(authenticate); // All attendance routes require authentication
+// All attendance routes require authentication
+router.use(authenticate);
 
-router.get('/', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Get attendance records endpoint - to be implemented',
-        data: [],
-    });
-});
+// Validation rules
+const markAttendanceValidation = [
+    body('courseId')
+        .notEmpty()
+        .withMessage('Course ID is required'),
+    body('status')
+        .isIn(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'])
+        .withMessage('Status must be one of: PRESENT, ABSENT, LATE, EXCUSED'),
+    body('date')
+        .isISO8601()
+        .withMessage('Date must be in ISO 8601 format'),
+    body('note')
+        .optional()
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage('Note must not exceed 500 characters'),
+];
 
-router.post('/', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Mark attendance endpoint - to be implemented',
-    });
-});
-
-router.get('/course/:courseId', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Get attendance by course endpoint - to be implemented',
-        data: [],
-    });
-});
-
-router.get('/stats/:courseId', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Get attendance statistics endpoint - to be implemented',
-        data: {},
-    });
-});
+// Routes
+router.get('/', getAttendance);
+router.post('/', markAttendanceValidation, validate, markAttendance);
+router.get('/stats', getAttendanceStats);
+router.delete('/:id', deleteAttendance);
 
 export default router; 

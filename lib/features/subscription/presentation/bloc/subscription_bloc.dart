@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../../core/network/api_client.dart';
 
 // Events
 abstract class SubscriptionEvent extends Equatable {
@@ -11,7 +12,14 @@ abstract class SubscriptionEvent extends Equatable {
 
 class LoadSubscriptionEvent extends SubscriptionEvent {}
 
-class UpgradeSubscriptionEvent extends SubscriptionEvent {}
+class UpgradeSubscriptionEvent extends SubscriptionEvent {
+  final String planType;
+
+  const UpgradeSubscriptionEvent(this.planType);
+
+  @override
+  List<Object> get props => [planType];
+}
 
 // States
 abstract class SubscriptionState extends Equatable {
@@ -26,13 +34,12 @@ class SubscriptionInitial extends SubscriptionState {}
 class SubscriptionLoading extends SubscriptionState {}
 
 class SubscriptionLoaded extends SubscriptionState {
-  final String subscriptionType;
-  final int coursesLimit;
+  final Map<String, dynamic> subscription;
 
-  const SubscriptionLoaded(this.subscriptionType, this.coursesLimit);
+  const SubscriptionLoaded(this.subscription);
 
   @override
-  List<Object> get props => [subscriptionType, coursesLimit];
+  List<Object> get props => [subscription];
 }
 
 class SubscriptionError extends SubscriptionState {
@@ -46,10 +53,14 @@ class SubscriptionError extends SubscriptionState {
 
 // BLoC
 class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
+  final ApiClient _apiClient;
+
   SubscriptionBloc({
-    required dynamic getSubscriptionStatusUseCase,
-    required dynamic upgradeSubscriptionUseCase,
-  }) : super(SubscriptionInitial()) {
+    required ApiClient apiClient,
+    dynamic getSubscriptionStatusUseCase,
+    dynamic upgradeSubscriptionUseCase,
+  })  : _apiClient = apiClient,
+        super(SubscriptionInitial()) {
     on<LoadSubscriptionEvent>(_onLoadSubscription);
     on<UpgradeSubscriptionEvent>(_onUpgradeSubscription);
   }
@@ -58,11 +69,16 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
       LoadSubscriptionEvent event, Emitter<SubscriptionState> emit) async {
     emit(SubscriptionLoading());
     try {
-      // TODO: Implement subscription loading logic
-      await Future.delayed(const Duration(milliseconds: 500));
-      emit(const SubscriptionLoaded('free', 2));
+      final response = await _apiClient.getSubscription();
+
+      if (response.success && response.data != null) {
+        emit(SubscriptionLoaded(response.data!));
+      } else {
+        emit(
+            SubscriptionError(response.error ?? 'Failed to load subscription'));
+      }
     } catch (e) {
-      emit(SubscriptionError(e.toString()));
+      emit(SubscriptionError('An unexpected error occurred: ${e.toString()}'));
     }
   }
 
@@ -71,10 +87,12 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
     emit(SubscriptionLoading());
     try {
       // TODO: Implement subscription upgrade logic
-      await Future.delayed(const Duration(seconds: 2));
-      emit(const SubscriptionLoaded('pro', -1));
+      await Future.delayed(const Duration(seconds: 1));
+      // Reload subscription after upgrade
+      add(LoadSubscriptionEvent());
     } catch (e) {
-      emit(SubscriptionError(e.toString()));
+      emit(
+          SubscriptionError('Failed to upgrade subscription: ${e.toString()}'));
     }
   }
 }

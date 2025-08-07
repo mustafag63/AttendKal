@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -16,7 +16,7 @@ model User {
   password  String
   name      String
   avatar    String?
-  role      UserRole @default(STUDENT)
+  role      String   @default("STUDENT")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,8 +69,8 @@ model CourseSchedule {
 
 model Attendance {
   id        String           @id @default(cuid())
-  date      DateTime         @db.Date
-  status    AttendanceStatus
+  date      DateTime
+  status    String
   note      String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -87,7 +87,7 @@ model Attendance {
 
 model Subscription {
   id        String           @id @default(cuid())
-  type      SubscriptionType
+  type      String
   startDate DateTime         @default(now())
   endDate   DateTime?
   isActive  Boolean          @default(true)
@@ -121,21 +121,8 @@ model UserSession {
   @@map("user_sessions")
 }
 
-// Enums
-enum UserRole {
-  STUDENT
-  TEACHER
-  ADMIN
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
-}
-
-enum SubscriptionType {
-  FREE
-  PRO
-} 
+// Note: SQLite doesn't support enums, using strings instead
+// Possible values:
+// UserRole: "STUDENT", "TEACHER", "ADMIN"
+// AttendanceStatus: "PRESENT", "ABSENT", "LATE", "EXCUSED"  
+// SubscriptionType: "FREE", "PRO" 

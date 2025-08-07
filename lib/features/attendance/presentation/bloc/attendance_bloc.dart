@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../../core/network/api_client.dart';
 
 // Events
 abstract class AttendanceEvent extends Equatable {
@@ -10,23 +11,29 @@ abstract class AttendanceEvent extends Equatable {
 }
 
 class LoadAttendanceEvent extends AttendanceEvent {
-  final String courseId;
+  final String? courseId;
 
-  const LoadAttendanceEvent(this.courseId);
+  const LoadAttendanceEvent({this.courseId});
 
   @override
-  List<Object> get props => [courseId];
+  List<Object> get props => [courseId ?? ''];
 }
 
 class MarkAttendanceEvent extends AttendanceEvent {
   final String courseId;
   final String status;
   final DateTime date;
+  final String? note;
 
-  const MarkAttendanceEvent(this.courseId, this.status, this.date);
+  const MarkAttendanceEvent({
+    required this.courseId,
+    required this.status,
+    required this.date,
+    this.note,
+  });
 
   @override
-  List<Object> get props => [courseId, status, date];
+  List<Object> get props => [courseId, status, date, note ?? ''];
 }
 
 // States
@@ -42,12 +49,12 @@ class AttendanceInitial extends AttendanceState {}
 class AttendanceLoading extends AttendanceState {}
 
 class AttendanceLoaded extends AttendanceState {
-  final List<Map<String, dynamic>> attendanceList;
+  final List<Map<String, dynamic>> attendances;
 
-  const AttendanceLoaded(this.attendanceList);
+  const AttendanceLoaded(this.attendances);
 
   @override
-  List<Object> get props => [attendanceList];
+  List<Object> get props => [attendances];
 }
 
 class AttendanceError extends AttendanceState {
@@ -59,12 +66,25 @@ class AttendanceError extends AttendanceState {
   List<Object> get props => [message];
 }
 
+class AttendanceMarked extends AttendanceState {
+  final Map<String, dynamic> attendance;
+
+  const AttendanceMarked(this.attendance);
+
+  @override
+  List<Object> get props => [attendance];
+}
+
 // BLoC
 class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
+  final ApiClient _apiClient;
+
   AttendanceBloc({
-    required dynamic markAttendanceUseCase,
-    required dynamic getAttendanceUseCase,
-  }) : super(AttendanceInitial()) {
+    required ApiClient apiClient,
+    dynamic markAttendanceUseCase,
+    dynamic getAttendanceUseCase,
+  })  : _apiClient = apiClient,
+        super(AttendanceInitial()) {
     on<LoadAttendanceEvent>(_onLoadAttendance);
     on<MarkAttendanceEvent>(_onMarkAttendance);
   }
@@ -73,11 +93,15 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
       LoadAttendanceEvent event, Emitter<AttendanceState> emit) async {
     emit(AttendanceLoading());
     try {
-      // TODO: Implement attendance loading logic
-      await Future.delayed(const Duration(milliseconds: 500));
-      emit(const AttendanceLoaded([]));
+      final response = await _apiClient.getAttendance(courseId: event.courseId);
+
+      if (response.success && response.data != null) {
+        emit(AttendanceLoaded(response.data!));
+      } else {
+        emit(AttendanceError(response.error ?? 'Failed to load attendance'));
+      }
     } catch (e) {
-      emit(AttendanceError(e.toString()));
+      emit(AttendanceError('An unexpected error occurred: ${e.toString()}'));
     }
   }
 
@@ -85,11 +109,22 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
       MarkAttendanceEvent event, Emitter<AttendanceState> emit) async {
     emit(AttendanceLoading());
     try {
-      // TODO: Implement mark attendance logic
-      await Future.delayed(const Duration(milliseconds: 500));
-      emit(const AttendanceLoaded([]));
+      final response = await _apiClient.markAttendance(
+        courseId: event.courseId,
+        status: event.status,
+        date: event.date,
+        note: event.note,
+      );
+
+      if (response.success && response.data != null) {
+        emit(AttendanceMarked(response.data!));
+        // Reload attendance after marking
+        add(LoadAttendanceEvent(courseId: event.courseId));
+      } else {
+        emit(AttendanceError(response.error ?? 'Failed to mark attendance'));
+      }
     } catch (e) {
-      emit(AttendanceError(e.toString()));
+      emit(AttendanceError('An unexpected error occurred: ${e.toString()}'));
     }
   }
 }
