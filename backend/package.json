@@ -70,5 +70,23 @@
   },
   "directories": {
     "test": "tests"
+  },
+  "nodemonConfig": {
+    "restartable": "rs",
+    "ignore": [
+      "node_modules/",
+      "logs/",
+      "coverage/",
+      "*.test.js"
+    ],
+    "watch": [
+      "src/"
+    ],
+    "ext": "js,json",
+    "env": {
+      "NODE_ENV": "development"
+    },
+    "delay": "1000",
+    "exitcrash": true
   }
 }

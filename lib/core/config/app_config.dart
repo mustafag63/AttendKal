@@ -2,6 +2,12 @@ class AppConfig {
   static const String appName = 'AttendKal';
   static const String appVersion = '1.0.0';
 
+  // Feature flags
+  static const bool subscriptionEnabled =
+      false; // Set to false for maintenance mode
+  static const bool analyticsEnabled = true;
+  static const bool notificationsEnabled = true;
+
   // Subscription limits
   static const int freeCoursesLimit = 2;
   static const int proCoursesLimit = -1; // -1 means unlimited
@@ -23,4 +29,8 @@ class AppConfig {
   static const String isFirstLaunchKey = 'is_first_launch';
   static const String subscriptionTypeKey = 'subscription_type';
   static const String darkModeKey = 'dark_mode';
+
+  // Maintenance messages
+  static const String subscriptionMaintenanceMessage =
+      'Abonelik bölümü şu anda bakımda. Kısa süre içinde tekrar deneyin.';
 }

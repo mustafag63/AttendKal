@@ -149,11 +149,28 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
-    logger.info(`🚀 AttendKal API Server running on port ${PORT}`);
-    logger.info(`📚 Environment: ${process.env.NODE_ENV}`);
-    logger.info(`🔗 API URL: http://localhost:${PORT}/api`);
-    logger.info(`❤️  Health Check: http://localhost:${PORT}/health`);
-});
+const startServer = (port) => {
+    const server = app.listen(port, () => {
+        logger.info(`🚀 AttendKal API Server running on port ${port}`);
+        logger.info(`📚 Environment: ${process.env.NODE_ENV}`);
+        logger.info(`🔗 API URL: http://localhost:${port}/api`);
+        logger.info(`❤️  Health Check: http://localhost:${port}/health`);
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            logger.warn(`Port ${port} is busy, trying port ${port + 1}...`);
+            server.close();
+            startServer(port + 1);
+        } else {
+            logger.error('Server error:', err);
+            process.exit(1);
+        }
+    });
+
+    return server;
+};
+
+const server = startServer(PORT);
 
 export default app; 

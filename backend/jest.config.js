@@ -1,57 +1,45 @@
 export default {
-    // Test environment
-    testEnvironment: 'node',
-
-    // Module file extensions
-    moduleFileExtensions: ['js', 'json'],
-
-    // Transform files
+    preset: 'node',
+    extensionsToTreatAsEsm: ['.js'],
+    globals: {
+        'ts-jest': {
+            useESM: true
+        }
+    },
+    moduleNameMapping: {
+        '^(\\.{1,2}/.*)\\.js$': '$1'
+    },
     transform: {},
-
-    // Test match patterns
-    testMatch: [
-        '**/tests/**/*.test.js',
-        '**/tests/**/*.spec.js',
-        '**/__tests__/**/*.js'
-    ],
-
-    // Coverage settings
-    collectCoverage: true,
-    coverageDirectory: 'coverage',
-    coverageReporters: ['text', 'lcov', 'html'],
+    testEnvironment: 'node',
+    setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
     collectCoverageFrom: [
         'src/**/*.js',
+        '!src/**/*.test.js',
+        '!src/**/*.spec.js',
         '!src/server.js',
-        '!**/node_modules/**',
-        '!**/tests/**',
-        '!**/coverage/**'
     ],
-
-    // Coverage thresholds
+    coverageDirectory: 'coverage',
+    coverageReporters: [
+        'text',
+        'lcov',
+        'html',
+        'json-summary'
+    ],
     coverageThreshold: {
         global: {
             branches: 70,
             functions: 70,
             lines: 70,
-            statements: 70
-        }
+            statements: 70,
+        },
     },
-
-    // Setup files
-    setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-
-    // Test timeout
-    testTimeout: 30000,
-
-    // Clear mocks between tests
-    clearMocks: true,
-
-    // Verbose output
+    testMatch: [
+        '<rootDir>/tests/**/*.test.js',
+        '<rootDir>/tests/**/*.spec.js'
+    ],
     verbose: true,
-
-    // Force exit after tests complete
+    collectCoverage: false,
+    maxWorkers: 1,
     forceExit: true,
-
-    // Detect open handles
     detectOpenHandles: true
 }; 

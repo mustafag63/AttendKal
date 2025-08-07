@@ -306,6 +306,12 @@ FIREBASE_CLIENT_EMAIL=your-client-email
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
+# Feature Flags & Maintenance Mode
+SUBSCRIPTION_ENABLED=true
+SUBSCRIPTION_MAINTENANCE=false
+ANALYTICS_ENABLED=true
+NOTIFICATIONS_ENABLED=true
+
 # Monitoring
 PROMETHEUS_PORT=9090
 ```
@@ -558,6 +564,77 @@ GET    /health/redis           # Redis bağlantısı
 - ❌ Video call integration
 - ❌ Social features
 - ❌ Real-time chat
+
+## 🔧 **Maintenance Mode & Feature Flags**
+
+### **Feature Control**
+AttendKal supports feature flags to enable/disable specific functionality during development or maintenance:
+
+#### **Backend Feature Flags**
+```env
+# Feature toggles
+SUBSCRIPTION_ENABLED=true          # Enable/disable subscription features
+SUBSCRIPTION_MAINTENANCE=false     # Maintenance mode for subscription service
+ANALYTICS_ENABLED=true            # Enable/disable analytics features
+NOTIFICATIONS_ENABLED=true        # Enable/disable notification system
+```
+
+#### **Flutter Feature Flags**
+```dart
+// lib/core/config/app_config.dart
+class AppConfig {
+  static const bool subscriptionEnabled = false; // Maintenance mode
+  static const bool analyticsEnabled = true;
+  static const bool notificationsEnabled = true;
+}
+```
+
+### **Maintenance Mode Implementation**
+
+#### **Backend Maintenance**
+When `SUBSCRIPTION_MAINTENANCE=true`, all subscription routes return 503:
+```json
+{
+  "success": false,
+  "message": "Abonelik servisi geçici bakımda.",
+  "error": "SERVICE_MAINTENANCE",
+  "retryAfter": 3600
+}
+```
+
+#### **Flutter Maintenance**
+When `subscriptionEnabled=false`, subscription page shows maintenance UI:
+```dart
+// Maintenance mode placeholder
+return Center(
+  child: Column(
+    children: [
+      Icon(Icons.construction, color: Colors.orange),
+      Text('Abonelik bölümü şu anda bakımda.'),
+    ],
+  ),
+);
+```
+
+### **Switching Between Modes**
+
+#### **Enable Subscription (Production Ready)**
+```bash
+# Backend
+echo "SUBSCRIPTION_MAINTENANCE=false" >> .env
+
+# Flutter 
+# Set subscriptionEnabled = true in app_config.dart
+```
+
+#### **Disable Subscription (Maintenance)**
+```bash
+# Backend
+echo "SUBSCRIPTION_MAINTENANCE=true" >> .env
+
+# Flutter
+# Set subscriptionEnabled = false in app_config.dart
+```
 
 ## 🧪 **Test Stratejisi**
 
