@@ -34,6 +34,18 @@ class AppConfig {
     'http://localhost:3002',
     'http://localhost:3003',
     'http://localhost:3004',
+    // iOS Simulator can reach host via localhost/127.0.0.1
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:3003',
+    'http://127.0.0.1:3004',
+    // Android emulator uses 10.0.2.2 to access host machine
+    'http://10.0.2.2:3000',
+    'http://10.0.2.2:3001',
+    'http://10.0.2.2:3002',
+    'http://10.0.2.2:3003',
+    'http://10.0.2.2:3004',
   ];
   static const String apiVersion = 'v1';
 

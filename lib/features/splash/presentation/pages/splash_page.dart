@@ -15,12 +15,19 @@ class _SplashPageState extends State<SplashPage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
-    _navigateToNext();
+    // Fallback: if auth state doesn't resolve in time for any reason, go to login after a timeout
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && !_navigated) {
+        context.go('/login');
+        _navigated = true;
+      }
+    });
   }
 
   void _setupAnimations() {
@@ -46,19 +53,15 @@ class _SplashPageState extends State<SplashPage>
     _animationController.forward();
   }
 
-  void _navigateToNext() {
-    Future.delayed(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        final authBloc = context.read<AuthBloc>();
-        final authState = authBloc.state;
-        
-        if (authState is AuthAuthenticated) {
-          context.go('/home');
-        } else {
-          context.go('/login');
-        }
-      }
-    });
+  void _handleAuthState(AuthState state) {
+    if (_navigated) return;
+    if (state is AuthAuthenticated) {
+      _navigated = true;
+      context.go('/home');
+    } else if (state is AuthUnauthenticated || state is AuthError) {
+      _navigated = true;
+      context.go('/login');
+    }
   }
 
   @override
@@ -69,78 +72,82 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App Logo
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.schedule,
-                        size: 60,
-                        color: Color(0xFF2196F3),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    // App Name
-                    const Text(
-                      'AttendKal',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // App Tagline
-                    Text(
-                      'Smart Attendance Tracking',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(height: 50),
-                    // Loading Indicator
-                    SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withValues(alpha: 0.8),
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, curr) => prev.runtimeType != curr.runtimeType,
+      listener: (context, state) => _handleAuthState(state),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        body: Center(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // App Logo
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.schedule,
+                          size: 60,
+                          color: Color(0xFF2196F3),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 30),
+                      // App Name
+                      const Text(
+                        'AttendKal',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // App Tagline
+                      Text(
+                        'Smart Attendance Tracking',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      // Loading Indicator
+                      SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
