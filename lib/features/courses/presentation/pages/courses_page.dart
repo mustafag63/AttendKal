@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/courses_bloc.dart';
+import '../../../../core/widgets/bottom_navigation.dart';
 
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -203,12 +204,6 @@ class _CoursesPageState extends State<CoursesPage> {
           return const SizedBox();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/add-course'),
-        backgroundColor: const Color(0xFF2196F3),
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }
@@ -232,7 +227,8 @@ class _CourseCard extends StatelessWidget {
 
     final schedule = course['schedule'] as List<dynamic>? ?? [];
     final attendanceStats = course['attendanceStats'] as Map<String, dynamic>?;
-    final attendanceRate = course['attendanceRate'] as double? ?? 0.0;
+    final attendanceRate =
+        (course['attendanceRate'] as num?)?.toDouble() ?? 0.0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

@@ -89,9 +89,11 @@ export const config = {
   },
 };
 
-// Helper functions
+// Utility functions
 export const isDevelopment = () => config.server.nodeEnv === 'development';
 export const isProduction = () => config.server.nodeEnv === 'production';
 export const isTest = () => config.server.nodeEnv === 'test';
+
+
 
 export default config; 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../subscription/presentation/bloc/subscription_bloc.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/widgets/bottom_navigation.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -353,6 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
+
     );
   }
 }

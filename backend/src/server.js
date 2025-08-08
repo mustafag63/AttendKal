@@ -13,6 +13,13 @@ import { logger } from './config/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { metricsMiddleware, metricsEndpoint } from './middleware/metricsMiddleware.js';
+import {
+  securityHeaders,
+  handlePreflight,
+  requestTimeout,
+  authRateLimit
+} from './middleware/securityMiddleware.js';
+import { sanitizeInput } from './middleware/validationMiddleware.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -31,6 +38,15 @@ const MAX_PORT = DEFAULT_PORT + 10; // Try up to 10 ports
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
+
+// Security headers
+app.use(securityHeaders);
+
+// CORS preflight handling
+app.use(handlePreflight);
+
+// Request timeout
+app.use(requestTimeout(30000));
 
 // Security middleware
 app.use(helmet({
@@ -75,6 +91,9 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Input sanitization
+app.use(sanitizeInput);
+
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -100,8 +119,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // Health routes (before API routes for direct access)
 app.use('/', healthRoutes);
 
-// API routes
-app.use('/api/auth', authRoutes);
+// API routes with authentication rate limiting
+app.use('/api/auth', authRateLimit, authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);

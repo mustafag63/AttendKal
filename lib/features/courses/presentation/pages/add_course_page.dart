@@ -19,6 +19,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
   String _selectedColor = '#2196F3';
   final List<Map<String, dynamic>> _schedule = [];
+  bool _isCreating = false;
 
   final List<String> _colors = [
     '#2196F3', // Blue
@@ -71,6 +72,10 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
   void _saveCourse() {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isCreating = true;
+      });
+
       context.read<CoursesBloc>().add(
             AddCourseEvent(
               name: _nameController.text.trim(),
@@ -95,20 +100,39 @@ class _AddCoursePageState extends State<AddCoursePage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/courses');
+            }
+          },
         ),
       ),
       body: BlocListener<CoursesBloc, CoursesState>(
         listener: (context, state) {
-          if (state is CoursesLoaded) {
+          if (state is CoursesLoaded && _isCreating) {
+            setState(() {
+              _isCreating = false;
+            });
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Course created successfully!'),
                 backgroundColor: Colors.green,
               ),
             );
-            context.pop();
+
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/courses');
+            }
           } else if (state is CoursesError) {
+            setState(() {
+              _isCreating = false;
+            });
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -120,7 +144,8 @@ class _AddCoursePageState extends State<AddCoursePage> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(
+                left: 16.0, right: 16.0, bottom: 96.0, top: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -384,41 +409,46 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
                 const SizedBox(height: 24),
 
-                // Save Button
-                SizedBox(
-                  width: double.infinity,
-                  child: BlocBuilder<CoursesBloc, CoursesState>(
-                    builder: (context, state) {
-                      return ElevatedButton(
-                        onPressed: state is CoursesLoading ? null : _saveCourse,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Color(
-                            int.parse(_selectedColor.substring(1), radix: 16) +
-                                0xFF000000,
-                          ),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: state is CoursesLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                ),
-                              )
-                            : const Text(
-                                'Create Course',
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                      );
-                    },
-                  ),
-                ),
+                // Save Button moved to bottomNavigationBar
               ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: BlocBuilder<CoursesBloc, CoursesState>(
+              builder: (context, state) {
+                return ElevatedButton(
+                  onPressed: state is CoursesLoading ? null : _saveCourse,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(
+                      int.parse(_selectedColor.substring(1), radix: 16) +
+                          0xFF000000,
+                    ),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: state is CoursesLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Create Course',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                );
+              },
             ),
           ),
         ),
@@ -488,14 +518,17 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
       return;
     }
 
-    final scheduleItem = {
+    final scheduleItem = <String, dynamic>{
       'dayOfWeek': _selectedDay,
       'startTime':
           '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
       'endTime':
           '${_endTime.hour.toString().padLeft(2, '0')}:${_endTime.minute.toString().padLeft(2, '0')}',
-      if (_roomController.text.isNotEmpty) 'room': _roomController.text.trim(),
     };
+
+    if (_roomController.text.isNotEmpty) {
+      scheduleItem['room'] = _roomController.text.trim();
+    }
 
     widget.onAdd(scheduleItem);
     Navigator.of(context).pop();

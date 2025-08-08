@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../courses/presentation/bloc/courses_bloc.dart';
 import '../../../attendance/presentation/bloc/attendance_bloc.dart';
+import '../../../../core/widgets/bottom_navigation.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -113,6 +114,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ],
         ),
       ),
+
     );
   }
 
@@ -322,7 +324,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 16),
             ...courses.map((course) {
               final name = course['name'] as String? ?? 'Unknown Course';
-              final attendanceRate = course['attendanceRate'] as double? ?? 0.0;
+              final attendanceRate = (course['attendanceRate'] as num?)?.toDouble() ?? 0.0;
               final color = Color(
                 int.parse(
                         (course['color'] as String? ?? '#2196F3').substring(1),

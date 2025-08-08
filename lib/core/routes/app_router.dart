@@ -14,6 +14,7 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/subscription/presentation/pages/subscription_page.dart';
+import '../widgets/main_navigation.dart';
 
 class AppRouter {
   static final RouterNotifier _notifier = RouterNotifier();
@@ -103,14 +104,14 @@ class AppRouter {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomePage(),
+        builder: (context, state) => const MainNavigation(initialIndex: 0),
       ),
 
       // Courses
       GoRoute(
         path: '/courses',
         name: 'courses',
-        builder: (context, state) => const CoursesPage(),
+        builder: (context, state) => const MainNavigation(initialIndex: 1),
       ),
       GoRoute(
         path: '/add-course',
@@ -132,7 +133,7 @@ class AppRouter {
       GoRoute(
         path: '/analytics',
         name: 'analytics',
-        builder: (context, state) => const AnalyticsPage(),
+        builder: (context, state) => const MainNavigation(initialIndex: 2),
       ),
 
       // Subscription
@@ -146,7 +147,7 @@ class AppRouter {
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) => const ProfilePage(),
+        builder: (context, state) => const MainNavigation(initialIndex: 3),
       ),
     ],
   );

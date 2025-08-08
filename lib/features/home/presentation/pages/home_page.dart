@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../courses/presentation/bloc/courses_bloc.dart';
+import '../../../../core/widgets/bottom_navigation.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -74,13 +75,13 @@ class _HomePageState extends State<HomePage> {
 
                 if (coursesState is CoursesLoaded) {
                   totalCourses = coursesState.courses.length;
-                  if (coursesState.courses.isNotEmpty) {
-                    double totalRate = 0;
-                    for (final course in coursesState.courses) {
-                      totalRate += (course['attendanceRate'] as double? ?? 0.0);
+                                      if (coursesState.courses.isNotEmpty) {
+                      double totalRate = 0;
+                      for (final course in coursesState.courses) {
+                        totalRate += (course['attendanceRate'] as num?)?.toDouble() ?? 0.0;
+                      }
+                      averageAttendance = totalRate / coursesState.courses.length;
                     }
-                    averageAttendance = totalRate / coursesState.courses.length;
-                  }
                 }
 
                 return Row(
@@ -240,14 +241,14 @@ class _HomePageState extends State<HomePage> {
                                       color: color.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Text(
-                                      '${(course['attendanceRate'] as double? ?? 0.0).toStringAsFixed(1)}%',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: color,
+                                                                          child: Text(
+                                        '${((course['attendanceRate'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(1)}%',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: color,
+                                        ),
                                       ),
-                                    ),
                                   ),
                                 ],
                               ),
@@ -293,41 +294,8 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Courses'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Analytics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              // Already on home
-              break;
-            case 1:
-              context.go('/courses');
-              break;
-            case 2:
-              context.go('/analytics');
-              break;
-            case 3:
-              context.go('/profile');
-              break;
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/add-course'),
-        child: const Icon(Icons.add),
-      ),
+
+      
     );
   }
 }

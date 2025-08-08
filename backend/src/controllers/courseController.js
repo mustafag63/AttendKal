@@ -155,15 +155,21 @@ export const getCourse = catchAsync(async (req, res, next) => {
 export const createCourse = catchAsync(async (req, res, next) => {
   const { name, code, description, instructor, color, schedule } = req.body;
 
+  // Normalize inputs
+  const normalizedName = name?.trim();
+  const normalizedCode = code?.toUpperCase().trim();
+  const normalizedInstructor = instructor?.trim();
+  const normalizedDescription = description?.trim();
+
   // Validate required fields
-  if (!name || !code || !instructor) {
+  if (!normalizedName || !normalizedCode || !normalizedInstructor) {
     return next(new AppError('Please provide name, code and instructor', 400));
   }
 
-  // Check if course code already exists for this user
+  // Check if course code already exists for this user (case-insensitive)
   const existingCourse = await prisma.course.findFirst({
     where: {
-      code,
+      code: normalizedCode,
       userId: req.user.id,
       isActive: true,
     },
@@ -176,25 +182,30 @@ export const createCourse = catchAsync(async (req, res, next) => {
   // Validate schedule if provided
   if (schedule && Array.isArray(schedule)) {
     for (const item of schedule) {
+      const dayOfWeek = parseInt(item.dayOfWeek);
+
       if (
-        !item.dayOfWeek ||
+        isNaN(dayOfWeek) ||
         !item.startTime ||
         !item.endTime ||
-        item.dayOfWeek < 0 ||
-        item.dayOfWeek > 6
+        dayOfWeek < 0 ||
+        dayOfWeek > 6
       ) {
         return next(new AppError('Invalid schedule format', 400));
       }
+
+      // Normalize the dayOfWeek to ensure it's an integer
+      item.dayOfWeek = dayOfWeek;
     }
   }
 
   // Create course with schedule
   const course = await prisma.course.create({
     data: {
-      name,
-      code,
-      description: description || '',
-      instructor,
+      name: normalizedName,
+      code: normalizedCode,
+      description: normalizedDescription || '',
+      instructor: normalizedInstructor,
       color: color || '#2196F3',
       userId: req.user.id,
       schedule: {
@@ -235,10 +246,10 @@ export const updateCourse = catchAsync(async (req, res, next) => {
   }
 
   // Check if new code conflicts with another course
-  if (code && code !== existingCourse.code) {
+  if (code && code.toUpperCase().trim() !== existingCourse.code) {
     const codeConflict = await prisma.course.findFirst({
       where: {
-        code,
+        code: code.toUpperCase().trim(),
         userId: req.user.id,
         isActive: true,
         NOT: { id },
@@ -252,10 +263,10 @@ export const updateCourse = catchAsync(async (req, res, next) => {
 
   // Update course
   const updateData = {};
-  if (name) updateData.name = name;
-  if (code) updateData.code = code;
-  if (description !== undefined) updateData.description = description;
-  if (instructor) updateData.instructor = instructor;
+  if (name) updateData.name = name.trim();
+  if (code) updateData.code = code.toUpperCase().trim();
+  if (description !== undefined) updateData.description = description?.trim();
+  if (instructor) updateData.instructor = instructor.trim();
   if (color) updateData.color = color;
 
   // Handle schedule update

@@ -28,6 +28,7 @@ class ApiService {
   late ApiClient _apiClient;
   String? _authToken;
   String? _refreshToken;
+  Future<void>? _refreshingToken;
 
   // Initialize the service
   Future<void> initialize() async {
@@ -83,11 +84,23 @@ class ApiService {
           handler.next(options);
         },
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401 && _refreshToken != null) {
-            // Try to refresh token
+          final status = error.response?.statusCode;
+          final path = error.requestOptions.path;
+
+          // Do not try to refresh on auth endpoints to avoid loops
+          final isAuthEndpoint = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/refresh-token') ||
+              path.contains('/auth/logout');
+
+          if (status == 401 && _refreshToken != null && !isAuthEndpoint) {
             try {
-              await _refreshAuthToken();
-              // Retry the original request
+              // Ensure only one refresh runs at a time
+              _refreshingToken ??= _refreshAuthToken();
+              await _refreshingToken;
+              _refreshingToken = null;
+
+              // Retry original request
               final clonedRequest = await _apiClient.dio.request(
                 error.requestOptions.path,
                 options: Options(
@@ -103,6 +116,7 @@ class ApiService {
               handler.resolve(clonedRequest);
               return;
             } catch (e) {
+              _refreshingToken = null;
               await _clearTokens();
             }
           }
