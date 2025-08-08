@@ -22,5 +22,7 @@ export default {
     collectCoverage: false,
     maxWorkers: 1,
     forceExit: true,
-    detectOpenHandles: true
+    detectOpenHandles: true,
+    transform: {},
+    moduleFileExtensions: ['js', 'mjs', 'cjs', 'json'],
 }; 

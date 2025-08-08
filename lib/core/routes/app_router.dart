@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import 'router_notifier.dart';
 
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/attendance/presentation/pages/attendance_page.dart';
@@ -15,7 +16,9 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/subscription/presentation/pages/subscription_page.dart';
 
 class AppRouter {
+  static final RouterNotifier _notifier = RouterNotifier();
   static final GoRouter router = GoRouter(
+    refreshListenable: _notifier,
     initialLocation: '/',
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(
@@ -54,26 +57,26 @@ class AppRouter {
     redirect: (context, state) {
       final authBloc = context.read<AuthBloc>();
       final authState = authBloc.state;
-      
+
       // If we're on splash page, let it handle the redirect
       if (state.uri.path == '/') {
         return null;
       }
-      
+
       // If user is authenticated and trying to access auth pages, redirect to home
       if (authState is AuthAuthenticated) {
         if (state.uri.path == '/login' || state.uri.path == '/register') {
           return '/home';
         }
       }
-      
+
       // If user is not authenticated and trying to access protected pages, redirect to login
       if (authState is AuthUnauthenticated || authState is AuthInitial) {
         if (state.uri.path != '/login' && state.uri.path != '/register') {
           return '/login';
         }
       }
-      
+
       return null;
     },
     routes: [
@@ -147,4 +150,9 @@ class AppRouter {
       ),
     ],
   );
+
+  // Call this when auth state changes
+  static void refresh() {
+    _notifier.notify();
+  }
 }

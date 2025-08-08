@@ -1,8 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma.js';
 import { AppError, catchAsync } from './errorHandler.js';
-
-const prisma = new PrismaClient();
 
 // Verify JWT token and protect routes
 export const authenticate = catchAsync(async (req, res, next) => {

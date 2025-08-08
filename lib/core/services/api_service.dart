@@ -119,8 +119,14 @@ class ApiService {
         'refreshToken': _refreshToken,
       });
 
-      final data = response.data['data'];
-      await _saveTokens(data['token'], data['refreshToken']);
+      final raw = response.data;
+      final isSuccess =
+          (raw['status'] == 'success') || (raw['success'] == true);
+      if (!isSuccess) {
+        throw ApiError(code: 'refresh_failed', message: raw['message']);
+      }
+      final payload = raw['data'] ?? raw;
+      await _saveTokens(payload['token'], payload['refreshToken']);
     } catch (e) {
       await _clearTokens();
       throw ApiError(
@@ -128,29 +134,33 @@ class ApiService {
     }
   }
 
-  // Handle API response
+  // Handle API response (robust to multiple shapes)
   T _handleResponse<T>(Response response, T Function(dynamic) parser) {
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = response.data;
-      if (data['status'] == 'success') {
-        return parser(data['data']);
-      } else {
-        // Handle validation errors
-        if (data['validationErrors'] != null) {
-          throw ApiError(
-            code: 'validation_error',
-            message: data['message'] ?? 'Validation failed',
-            statusCode: response.statusCode,
-            validationErrors: data['validationErrors'],
-          );
-        }
+    final status = response.statusCode ?? 0;
+    if (status == 200 || status == 201) {
+      final body = response.data;
+      final isSuccess =
+          (body['status'] == 'success') || (body['success'] == true);
+      if (isSuccess) {
+        final payload = body.containsKey('data') ? body['data'] : body;
+        return parser(payload);
+      }
 
+      // Handle validation errors
+      if (body['validationErrors'] != null) {
         throw ApiError(
-          code: data['code'] ?? 'unknown',
-          message: data['message'] ?? 'Unknown error',
+          code: 'validation_error',
+          message: body['message'] ?? 'Validation failed',
           statusCode: response.statusCode,
+          validationErrors: Map<String, dynamic>.from(body['validationErrors']),
         );
       }
+
+      throw ApiError(
+        code: body['code'] ?? 'unknown',
+        message: body['message'] ?? 'Unknown error',
+        statusCode: response.statusCode,
+      );
     } else {
       throw ApiError(
         code: 'http_error',
@@ -165,16 +175,22 @@ class ApiService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await _apiClient.login(email, password);
-      final data = _handleResponse(response, (data) => data);
+      final data =
+          _handleResponse(response, (data) => Map<String, dynamic>.from(data));
 
       // Save tokens
       await _saveTokens(data['token'], data['refreshToken']);
 
       return data;
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -184,16 +200,22 @@ class ApiService {
       String name, String email, String password) async {
     try {
       final response = await _apiClient.register(name, email, password);
-      final data = _handleResponse(response, (data) => data);
+      final data =
+          _handleResponse(response, (data) => Map<String, dynamic>.from(data));
 
       // Save tokens
       await _saveTokens(data['token'], data['refreshToken']);
 
       return data;
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -212,11 +234,21 @@ class ApiService {
   Future<Map<String, dynamic>> getCurrentUser() async {
     try {
       final response = await _apiClient.getCurrentUser();
-      return _handleResponse(response, (data) => data['user']);
+      return _handleResponse(response, (data) {
+        if (data is Map && data.containsKey('user'))
+          return Map<String, dynamic>.from(data['user']);
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -227,12 +259,24 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getCourses() async {
     try {
       final response = await _apiClient.getCourses();
-      return _handleResponse(
-          response, (data) => List<Map<String, dynamic>>.from(data['courses']));
+      return _handleResponse(response, (data) {
+        if (data is Map && data['courses'] is List) {
+          return List<Map<String, dynamic>>.from(data['courses']);
+        }
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+        return <Map<String, dynamic>>[];
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -242,11 +286,22 @@ class ApiService {
       Map<String, dynamic> courseData) async {
     try {
       final response = await _apiClient.createCourse(courseData);
-      return _handleResponse(response, (data) => data['course']);
+      return _handleResponse(response, (data) {
+        if (data is Map && data['course'] is Map) {
+          return Map<String, dynamic>.from(data['course']);
+        }
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -256,11 +311,22 @@ class ApiService {
       String courseId, Map<String, dynamic> courseData) async {
     try {
       final response = await _apiClient.updateCourse(courseId, courseData);
-      return _handleResponse(response, (data) => data['course']);
+      return _handleResponse(response, (data) {
+        if (data is Map && data['course'] is Map) {
+          return Map<String, dynamic>.from(data['course']);
+        }
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -270,9 +336,14 @@ class ApiService {
     try {
       await _apiClient.deleteCourse(courseId);
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -284,11 +355,19 @@ class ApiService {
       Map<String, dynamic> attendanceData) async {
     try {
       final response = await _apiClient.markAttendance(attendanceData);
-      return _handleResponse(response, (data) => data['attendance']);
+      return _handleResponse(response, (data) {
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -299,12 +378,24 @@ class ApiService {
     try {
       final response =
           await _apiClient.getAttendance(courseId: courseId, date: date);
-      return _handleResponse(response,
-          (data) => List<Map<String, dynamic>>.from(data['attendances']));
+      return _handleResponse(response, (data) {
+        if (data is Map && data['attendances'] is List) {
+          return List<Map<String, dynamic>>.from(data['attendances']);
+        }
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+        return <Map<String, dynamic>>[];
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -315,11 +406,22 @@ class ApiService {
   Future<Map<String, dynamic>> getSubscription() async {
     try {
       final response = await _apiClient.getSubscription();
-      return _handleResponse(response, (data) => data['subscription']);
+      return _handleResponse(response, (data) {
+        if (data is Map && data['subscription'] is Map) {
+          return Map<String, dynamic>.from(data['subscription']);
+        }
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -328,11 +430,19 @@ class ApiService {
   Future<Map<String, dynamic>> upgradeSubscription(String planType) async {
     try {
       final response = await _apiClient.upgradeSubscription(planType);
-      return _handleResponse(response, (data) => data);
+      return _handleResponse(response, (data) {
+        if (data is Map) return Map<String, dynamic>.from(data);
+        return <String, dynamic>{};
+      });
     } on DioException catch (e) {
+      final data = e.response?.data;
       throw ApiError(
-        code: e.response?.data['code'] ?? 'network_error',
-        message: e.response?.data['message'] ?? e.message,
+        code: (data is Map && data['code'] != null)
+            ? data['code']
+            : 'network_error',
+        message: (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message,
         statusCode: e.response?.statusCode,
       );
     }
@@ -350,4 +460,3 @@ class ApiService {
   // Get auth token
   String? get authToken => _authToken;
 }
- 

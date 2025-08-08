@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../subscription/presentation/bloc/subscription_bloc.dart';
+import '../../../../core/config/app_config.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -16,7 +17,9 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     // Load subscription data
-    context.read<SubscriptionBloc>().add(LoadSubscriptionEvent());
+    if (AppConfig.subscriptionEnabled) {
+      context.read<SubscriptionBloc>().add(LoadSubscriptionEvent());
+    }
   }
 
   void _logout() {
@@ -152,102 +155,106 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 20),
 
-              // Subscription Info
-              BlocBuilder<SubscriptionBloc, SubscriptionState>(
-                builder: (context, subscriptionState) {
-                  if (subscriptionState is SubscriptionLoaded) {
-                    final subscription = subscriptionState.subscription;
-                    final isActive = subscription['isActive'] as bool? ?? false;
-                    final type = subscription['type'] as String? ?? 'FREE';
+              // Subscription Info (hidden when disabled)
+              if (AppConfig.subscriptionEnabled)
+                BlocBuilder<SubscriptionBloc, SubscriptionState>(
+                  builder: (context, subscriptionState) {
+                    if (subscriptionState is SubscriptionLoaded) {
+                      final subscription = subscriptionState.subscription;
+                      final isActive =
+                          subscription['isActive'] as bool? ?? false;
+                      final type = subscription['type'] as String? ?? 'FREE';
 
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  color: type == 'PRO'
-                                      ? Colors.amber
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Subscription',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    color: type == 'PRO'
+                                        ? Colors.amber
+                                        : Colors.grey,
                                   ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.red.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    isActive ? 'Active' : 'Inactive',
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Subscription',
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          isActive ? Colors.green : Colors.red,
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Plan: ${type.toLowerCase().replaceRange(0, 1, type[0].toUpperCase())}',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            if (type == 'FREE') ...[
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Upgrade to Pro for unlimited courses and advanced features',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      isActive ? 'Active' : 'Inactive',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isActive
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () => context.go('/subscription'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.amber,
-                                    foregroundColor: Colors.black,
-                                  ),
-                                  child: const Text('Upgrade to Pro'),
-                                ),
+                              Text(
+                                'Plan: ${type.toLowerCase().replaceRange(0, 1, type[0].toUpperCase())}',
+                                style: const TextStyle(fontSize: 16),
                               ),
+                              if (type == 'FREE') ...[
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Upgrade to Pro for unlimited courses and advanced features',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () =>
+                                        context.go('/subscription'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.amber,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    child: const Text('Upgrade to Pro'),
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  } else if (subscriptionState is SubscriptionLoading) {
-                    return const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
+                      );
+                    } else if (subscriptionState is SubscriptionLoading) {
+                      return const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+                    }
+                    return const SizedBox();
+                  },
+                ),
 
               const SizedBox(height: 20),
 

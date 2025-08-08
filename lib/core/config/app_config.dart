@@ -5,7 +5,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // Feature flags
-  static const bool subscriptionEnabled = true;
+  static const bool subscriptionEnabled = false;
   static const bool analyticsEnabled = true;
   static const bool notificationsEnabled = true;
 

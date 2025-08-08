@@ -45,10 +45,11 @@ class AttendKalApp extends StatelessWidget {
             BlocProvider(
               create: (_) => sl<AuthBloc>()..add(AuthInitialEvent()),
             ),
-            BlocProvider(
-              create: (_) =>
-                  sl<SubscriptionBloc>()..add(LoadSubscriptionEvent()),
-            ),
+            if (AppConfig.subscriptionEnabled)
+              BlocProvider(
+                create: (_) =>
+                    sl<SubscriptionBloc>()..add(LoadSubscriptionEvent()),
+              ),
             BlocProvider(create: (_) => sl<CoursesBloc>()),
             BlocProvider(create: (_) => sl<AttendanceBloc>()),
           ],

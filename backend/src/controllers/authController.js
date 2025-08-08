@@ -1,11 +1,9 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { logger } from '../config/logger.js';
 import ApiResponse from '../utils/apiResponse.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma.js';
 
 // Generate JWT token
 const generateToken = (id) => {

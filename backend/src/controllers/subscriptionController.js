@@ -1,13 +1,14 @@
 import { catchAsync } from '../middleware/errorHandler.js';
+import { config } from '../config/index.js';
 
 // Get user subscription - simplified for now
 export const getSubscription = catchAsync(async (req, res, next) => {
-  // Return default free subscription
+  const disabled = process.env.SUBSCRIPTION_ENABLED === 'false';
   res.status(200).json({
     status: 'success',
     data: {
       id: 'default-subscription',
-      type: 'FREE',
+      type: disabled ? 'PRO' : 'FREE',
       isActive: true,
       startDate: new Date().toISOString(),
       endDate: null,
@@ -25,7 +26,7 @@ export const upgradeSubscription = catchAsync(async (req, res, next) => {
     status: 'success',
     message: 'Subscription upgrade feature is coming soon!',
     data: {
-      type: 'FREE',
+      type: 'PRO',
       isActive: true,
     },
   });

@@ -65,7 +65,7 @@ export const config = {
     port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT) || 587,
     user: process.env.EMAIL_USER || process.env.SMTP_USER,
     password: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS,
-    from: process.env.EMAIL_FROM || 'noreply@attendkal.com',
+    from: process.env.EMAIL_FROM || 'norereeply@attendkal.com',
   },
 
   // Redis configuration
@@ -85,6 +85,7 @@ export const config = {
       free: 2,
       pro: -1, // unlimited
     },
+    subscriptionEnabled: process.env.SUBSCRIPTION_ENABLED !== 'false',
   },
 };
 

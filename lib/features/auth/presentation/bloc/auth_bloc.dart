@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/routes/app_router.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -93,11 +94,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (_apiService.isAuthenticated) {
         final user = await _apiService.getCurrentUser();
         emit(AuthAuthenticated(user));
+        AppRouter.refresh();
       } else {
         emit(AuthUnauthenticated());
+        AppRouter.refresh();
       }
     } catch (e) {
       emit(AuthUnauthenticated());
+      AppRouter.refresh();
     }
   }
 
@@ -107,11 +111,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (_apiService.isAuthenticated) {
         final user = await _apiService.getCurrentUser();
         emit(AuthAuthenticated(user));
+        AppRouter.refresh();
       } else {
         emit(AuthUnauthenticated());
+        AppRouter.refresh();
       }
     } catch (e) {
       emit(AuthUnauthenticated());
+      AppRouter.refresh();
     }
   }
 
@@ -123,12 +130,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('✅ Login successful for: ${event.email}');
       print('📱 User data: ${result['user']}');
       emit(AuthAuthenticated(result['user']));
+      AppRouter.refresh();
     } on ApiError catch (e) {
       print('❌ Login failed with ApiError: ${e.message}');
       emit(AuthError(e.message ?? 'Login failed'));
+      AppRouter.refresh();
     } catch (e) {
       print('❌ Login failed with unexpected error: $e');
       emit(AuthError('An unexpected error occurred'));
+      AppRouter.refresh();
     }
   }
 
@@ -138,6 +148,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       if (event.password != event.confirmPassword) {
         emit(AuthError('Passwords do not match'));
+        AppRouter.refresh();
         return;
       }
 
@@ -147,10 +158,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.password,
       );
       emit(AuthAuthenticated(result['user']));
+      AppRouter.refresh();
     } on ApiError catch (e) {
       emit(AuthError(e.message ?? 'Registration failed'));
+      AppRouter.refresh();
     } catch (e) {
       emit(AuthError('An unexpected error occurred'));
+      AppRouter.refresh();
     }
   }
 
@@ -161,6 +175,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Continue with logout even if API call fails
     } finally {
       emit(AuthUnauthenticated());
+      AppRouter.refresh();
     }
   }
 }

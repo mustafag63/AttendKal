@@ -1,9 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma.js';
 import { AppError } from '../middleware/errorHandler.js';
-
-const prisma = new PrismaClient();
 
 export class AuthService {
   // Generate JWT tokens
@@ -112,7 +110,7 @@ export class AuthService {
 
     // Generate new tokens
     const { accessToken, refreshToken: newRefreshToken } =
-            this.generateTokens(session.user.id);
+      this.generateTokens(session.user.id);
 
     // Update session
     await prisma.userSession.update({

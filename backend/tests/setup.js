@@ -7,6 +7,8 @@ process.env.JWT_REFRESH_EXPIRE = '7d';
 process.env.BCRYPT_ROUNDS = '4'; // Lower rounds for faster tests
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/attendkal_test';
 
+import { jest } from '@jest/globals';
+
 // Global test timeout
 jest.setTimeout(30000);
 

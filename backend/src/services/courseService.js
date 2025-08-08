@@ -260,6 +260,9 @@ export class CourseService {
 
   // Private helper methods
   static async _checkSubscriptionLimits(userId) {
+    if (process.env.SUBSCRIPTION_ENABLED === 'false') {
+      return; // Bypass limits when subscription is disabled
+    }
     const subscription = await prisma.subscription.findUnique({
       where: { userId },
     });
@@ -290,8 +293,8 @@ export class CourseService {
     for (const item of schedule) {
       if (
         typeof item.dayOfWeek !== 'number' ||
-                item.dayOfWeek < 0 ||
-                item.dayOfWeek > 6
+        item.dayOfWeek < 0 ||
+        item.dayOfWeek > 6
       ) {
         throw new AppError('Invalid day of week (0-6)', 400);
       }

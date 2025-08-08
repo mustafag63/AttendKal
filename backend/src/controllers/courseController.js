@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma.js';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { logger } from '../config/logger.js';
-
-const prisma = new PrismaClient();
 
 // Get all courses for a user
 export const getCourses = catchAsync(async (req, res, next) => {
@@ -66,7 +64,7 @@ export const getCourses = catchAsync(async (req, res, next) => {
       });
 
       const attendanceRate =
-                stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
+        stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
 
       return {
         ...course,
@@ -139,7 +137,7 @@ export const getCourse = catchAsync(async (req, res, next) => {
   });
 
   const attendanceRate =
-        stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
+    stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
 
   res.status(200).json({
     status: 'success',
@@ -180,10 +178,10 @@ export const createCourse = catchAsync(async (req, res, next) => {
     for (const item of schedule) {
       if (
         !item.dayOfWeek ||
-                !item.startTime ||
-                !item.endTime ||
-                item.dayOfWeek < 0 ||
-                item.dayOfWeek > 6
+        !item.startTime ||
+        !item.endTime ||
+        item.dayOfWeek < 0 ||
+        item.dayOfWeek > 6
       ) {
         return next(new AppError('Invalid schedule format', 400));
       }
@@ -379,7 +377,7 @@ export const getCourseStats = catchAsync(async (req, res, next) => {
   });
 
   const overallAttendanceRate =
-        stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
+    stats.total > 0 ? ((stats.present + stats.late) / stats.total) * 100 : 0;
 
   res.status(200).json({
     status: 'success',

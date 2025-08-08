@@ -76,20 +76,6 @@ class ApiClient {
         },
       ),
     );
-
-    // Auth interceptor
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          // TODO: Add auth token if available
-          // final token = await getAuthToken();
-          // if (token != null) {
-          //   options.headers['Authorization'] = 'Bearer $token';
-          // }
-          handler.next(options);
-        },
-      ),
-    );
   }
 
   // Auth methods
@@ -148,13 +134,9 @@ class ApiClient {
     return await _dio.get('/attendance', queryParameters: queryParams);
   }
 
-  // Subscription methods
-  Future<Response> getSubscriptionStatus() async {
-    return await _dio.get('/subscriptions');
-  }
-
+  // Subscription methods (aligned with backend)
   Future<Response> getSubscription() async {
-    return await _dio.get('/subscriptions/current');
+    return await _dio.get('/subscriptions');
   }
 
   Future<Response> upgradeSubscription(String planType) async {

@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma.js';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { logger } from '../config/logger.js';
-
-const prisma = new PrismaClient();
 
 // Get attendance records
 export const getAttendance = catchAsync(async (req, res, next) => {
