@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
     Users,
@@ -207,19 +206,19 @@ export default function DashboardPage() {
             {systemAlerts.length > 0 && (
                 <div className="space-y-3">
                     {systemAlerts.map((alert) => (
-                        <Alert key={alert.id} className={
+                        <Card key={alert.id} className={
                             alert.type === 'warning' ? 'border-yellow-300 bg-yellow-50' : 'border-blue-300 bg-blue-50'
                         }>
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertDescription>
+                            <CardContent>
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <strong>{alert.title}:</strong> {alert.message}
                                     </div>
                                     <span className="text-xs text-gray-500">{alert.timestamp}</span>
                                 </div>
-                            </AlertDescription>
-                        </Alert>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
             )}

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { DataTable } from '@/components/data-table/data-table';
 import {
@@ -460,21 +459,19 @@ export default function SecurityPage() {
 
             {/* Security Alerts */}
             <div className="space-y-4">
-                <Alert className="border-red-300 bg-red-50">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
+                <Card className="border-red-300 bg-red-50">
+                    <CardContent className="p-4 text-sm text-red-800">
                         <strong>High Priority:</strong> Multiple failed login attempts detected from IP 45.123.45.67.
                         Consider blocking this IP address.
-                    </AlertDescription>
-                </Alert>
+                    </CardContent>
+                </Card>
 
-                <Alert className="border-yellow-300 bg-yellow-50">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
+                <Card className="border-yellow-300 bg-yellow-50">
+                    <CardContent className="p-4 text-sm text-yellow-800">
                         <strong>Medium Priority:</strong> User john.doe@email.com attempted to access admin panel
                         without proper permissions. Account has been temporarily suspended.
-                    </AlertDescription>
-                </Alert>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

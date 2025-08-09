@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
     Database,
@@ -113,13 +112,13 @@ export default function SystemPage() {
 
             {/* Maintenance Mode Alert */}
             {isMaintenanceMode && (
-                <Alert className="border-orange-300 bg-orange-50">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
+                <Card className="border-orange-300 bg-orange-50">
+                    <CardContent className="p-4 text-sm text-orange-800">
+                        <AlertTriangle className="h-4 w-4" />
                         <strong>Maintenance Mode Active:</strong> The system is currently in maintenance mode.
                         Users may experience limited functionality.
-                    </AlertDescription>
-                </Alert>
+                    </CardContent>
+                </Card>
             )}
 
             {/* System Health Overview */}
@@ -210,7 +209,7 @@ export default function SystemPage() {
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${metric.status === 'good' ? 'bg-green-600' :
-                                                    metric.status === 'warning' ? 'bg-yellow-600' : 'bg-red-600'
+                                                metric.status === 'warning' ? 'bg-yellow-600' : 'bg-red-600'
                                                 }`}
                                             style={{ width: `${Math.min(metric.value, 100)}%` }}
                                         />
