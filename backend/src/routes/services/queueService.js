@@ -1,6 +1,6 @@
 import Bull from 'bull';
-import { config } from '../config/index.js';
-import { logger } from '../config/logger.js';
+import { config } from '../../config/index.js';
+import { logger } from '../../config/logger.js';
 import { sendEmail } from './emailService.js';
 import { generateAttendanceReport } from './reportService.js';
 

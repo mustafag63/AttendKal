@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { changeSubscriptionPlanValidation } from '../dto/validationSchemas.js';
-import { validateRequest } from '../middleware/validationMiddleware.js';
+import { validate } from '../middleware/validationMiddleware.js';
 import {
   getSubscription,
   getSubscriptionPlans,
@@ -25,10 +25,10 @@ router.use(authenticate);
 router.get('/', getSubscription);
 
 // Change subscription plan (free during beta)
-router.post('/change-plan', changeSubscriptionPlanValidation, validateRequest, changeSubscriptionPlan);
+router.post('/change-plan', changeSubscriptionPlanValidation, validate, changeSubscriptionPlan);
 
 // Legacy upgrade subscription endpoint (for backward compatibility)
-router.post('/upgrade', changeSubscriptionPlanValidation, validateRequest, upgradeSubscription);
+router.post('/upgrade', changeSubscriptionPlanValidation, validate, upgradeSubscription);
 
 // Cancel subscription
 router.post('/cancel', cancelSubscription);

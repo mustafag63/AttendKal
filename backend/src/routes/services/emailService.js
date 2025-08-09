@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import { config } from '../config/index.js';
-import { logger } from '../config/logger.js';
+import { config } from '../../config/index.js';
+import { logger } from '../../config/logger.js';
 
 // Email templates
 const emailTemplates = {

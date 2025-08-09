@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer';
 import { PDFDocument, rgb } from 'pdf-lib';
 import ExcelJS from 'exceljs';
-import { prisma } from '../utils/prisma.js';
-import { logger } from '../config/logger.js';
-import { config } from '../config/index.js';
+import { prisma } from '../../utils/prisma.js';
+import { logger } from '../../config/logger.js';
+import { config } from '../../config/index.js';
 
 class ReportService {
   constructor() {
