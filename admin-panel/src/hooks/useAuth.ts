@@ -9,12 +9,22 @@ import { toast } from 'sonner';
 const authApi = {
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
         const response = await apiClient.post('/api/auth/login', credentials);
-        return response.data;
+        // Map backend shape to frontend auth shape
+        return {
+            accessToken: response.data?.data?.token,
+            refreshToken: response.data?.data?.refreshToken,
+        };
     },
 
     me: async (): Promise<UserMe> => {
         const response = await apiClient.get('/api/auth/me');
-        return response.data;
+        const userData = response.data?.data?.user || response.data?.data;
+        return {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
+        };
     },
 
     logout: async (): Promise<void> => {

@@ -9,7 +9,12 @@ import {
     BookOpen,
     ClipboardCheck,
     Settings,
-    Calendar
+    Calendar,
+    BarChart3,
+    Database,
+    Shield,
+    Bell,
+    FileText
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -32,6 +37,31 @@ const sidebarItems = [
         name: 'Attendance',
         href: '/dashboard/attendance',
         icon: ClipboardCheck,
+    },
+    {
+        name: 'Analytics',
+        href: '/dashboard/analytics',
+        icon: BarChart3,
+    },
+    {
+        name: 'Reports',
+        href: '/dashboard/reports',
+        icon: FileText,
+    },
+    {
+        name: 'System',
+        href: '/dashboard/system',
+        icon: Database,
+    },
+    {
+        name: 'Security',
+        href: '/dashboard/security',
+        icon: Shield,
+    },
+    {
+        name: 'Notifications',
+        href: '/dashboard/notifications',
+        icon: Bell,
     },
     {
         name: 'Settings',
