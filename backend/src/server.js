@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
+import pino from 'pino';
+import pinoHttp from 'pino-http';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.js';
@@ -39,6 +41,10 @@ const MAX_PORT = DEFAULT_PORT + 10; // Try up to 10 ports
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
 
+// Setup pino logger for HTTP requests
+const pinoLogger = pino({ level: process.env.LOG_LEVEL || 'info' });
+app.use(pinoHttp({ logger: pinoLogger }));
+
 // Security headers
 app.use(securityHeaders);
 
@@ -61,15 +67,20 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  maxAge: 86400, // 24 hours
-};
-app.use(cors(corsOptions));
+// CORS (read from env, support comma-separated list)
+const allowed = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, cb) {
+    if (!origin) return cb(null, true); // allow same-origin tools & curl
+    const ok = allowed.includes(origin);
+    cb(ok ? null : new Error('Not allowed by CORS'), ok);
+  },
+  credentials: true
+}));
 
 // Compression middleware
 app.use(compression());

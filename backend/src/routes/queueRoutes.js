@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticate, restrictTo } from '../middleware/authMiddleware.js';
-import { emailQueue, reportQueue, notificationQueue, queueJobs } from '../services/queueService.js';
+import { emailQueue, reportQueue, notificationQueue, queueJobs } from './services/queueService.js';
 import { catchAsync } from '../middleware/errorHandler.js';
 
 const router = express.Router();
@@ -170,21 +170,21 @@ router.post('/test/email', catchAsync(async (req, res) => {
 
   let job;
   switch (type) {
-  case 'welcome':
-    job = await queueJobs.sendWelcomeEmail(email, req.user.name);
-    break;
-  case 'reminder':
-    job = await queueJobs.scheduleAttendanceReminder(
-      email,
-      'Test Course',
-      new Date(Date.now() + 60000).toISOString() // 1 minute from now
-    );
-    break;
-  default:
-    return res.status(400).json({
-      status: 'error',
-      message: 'Invalid email type',
-    });
+    case 'welcome':
+      job = await queueJobs.sendWelcomeEmail(email, req.user.name);
+      break;
+    case 'reminder':
+      job = await queueJobs.scheduleAttendanceReminder(
+        email,
+        'Test Course',
+        new Date(Date.now() + 60000).toISOString() // 1 minute from now
+      );
+      break;
+    default:
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid email type',
+      });
   }
 
   res.json({

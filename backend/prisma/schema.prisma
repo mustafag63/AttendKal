@@ -1,191 +1,74 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Note: SQLite doesn't support enums, we'll use strings with validation
-
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  password        String
-  name            String
-  avatar          String?
-  role            String   @default("STUDENT")
-  isActive        Boolean  @default(true)
-  emailVerified   Boolean  @default(false)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  password       String
+  role           Role           @default(USER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  attendances    Attendance[]
 
-  // Relations
-  courses           Course[]
-  attendances       Attendance[]
-  subscription      Subscription?
-  sessions          UserSession[]
-  passwordResets    PasswordReset[]
-  notifications     Notification[]
-
-  @@index([email])
-  @@index([role])
-  @@index([isActive])
-  @@index([createdAt])
-  @@map("users")
+  // ---- EKLENEN ALANLAR ----
+  isActive       Boolean        @default(true)
+  status         AccountStatus  @default(ACTIVE)
+  blocked        Boolean        @default(false)
+  deletedAt      DateTime?
+  emailVerified  Boolean        @default(true)
 }
 
 model Course {
-  id          String      @id @default(cuid())
-  name        String
+  id          String        @id @default(cuid())
   code        String
-  description String?
-  instructor  String
-  color       String      @default("#2196F3")
-  credits     Int?        @default(3)
-  semester    String?
-  year        Int?
-  isActive    Boolean     @default(true)
-  maxStudents Int?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Schedule
-  schedule CourseSchedule[]
-
-  // Relations
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  day         String        // Mon/Tue/Wed...
+  start       String        // "09:00"
+  end         String        // "11:00"
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   attendances Attendance[]
 
-  @@unique([userId, code])
-  @@index([userId])
-  @@index([isActive])
-  @@index([createdAt])
-  @@index([semester, year])
-  @@map("courses")
-}
-
-model CourseSchedule {
-  id        String  @id @default(cuid())
-  dayOfWeek Int     // 0=Sunday, 1=Monday, etc.
-  startTime String  // HH:MM format
-  endTime   String  // HH:MM format
-  room      String?
-  building  String?
-
-  // Relations
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@map("course_schedules")
+  @@index([code])
 }
 
 model Attendance {
-  id           String           @id @default(cuid())
-  date         DateTime
-  status       String
-  note         String?
-  latitude     Float?
-  longitude    Float?
-  accuracy     Float?
-  isVerified   Boolean          @default(false)
-  verifiedAt   DateTime?
-  verifiedBy   String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  date      DateTime
+  status    Status    @default(PRESENT)
 
-  // Relations
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseId, date])
-  @@index([userId])
-  @@index([courseId])
+  createdAt DateTime @default(now())
+
+  @@index([userId, courseId, date])
   @@index([date])
-  @@index([status])
-  @@index([userId, date])
-  @@index([courseId, date])
-  @@map("attendances")
+  @@unique([userId, courseId, date])
 }
 
-model Subscription {
-  id                   String           @id @default(cuid())
-  type                 String           @default("FREE")
-  startDate            DateTime         @default(now())
-  endDate              DateTime?
-  isActive             Boolean          @default(true)
-  autoRenew            Boolean          @default(false)
-  maxCourses           Int              @default(2)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-
-  // Payment info
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  stripePriceId        String?
-  lastPaymentDate      DateTime?
-  nextPaymentDate      DateTime?
-
-  // Relations
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("subscriptions")
+enum Role {
+  ADMIN
+  USER
 }
 
-model UserSession {
-  id           String   @id @default(cuid())
-  refreshToken String   @unique
-  userAgent    String?
-  ipAddress    String?
-  isActive     Boolean  @default(true)
-  expiresAt    DateTime
-  lastUsedAt   DateTime @default(now())
-  createdAt    DateTime @default(now())
-
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_sessions")
+enum Status {
+  PRESENT
+  ABSENT
+  LATE
 }
 
-model PasswordReset {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  email     String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
-
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("password_resets")
+enum AccountStatus {
+  ACTIVE
+  DEACTIVATED
 }
-
-model Notification {
-  id        String   @id @default(cuid())
-  title     String
-  message   String
-  type      String   @default("INFO") // INFO, WARNING, ERROR, SUCCESS
-  isRead    Boolean  @default(false)
-  readAt    DateTime?
-  createdAt DateTime @default(now())
-
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-} 

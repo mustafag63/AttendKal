@@ -12,8 +12,8 @@ env:
   IMAGE_NAME: attendkal/backend
 
 jobs:
-  # 🧪 Test Stage
-  test:
+  # 🧪 Test Backend
+  test-backend:
     runs-on: ubuntu-latest
     
     services:
@@ -73,17 +73,55 @@ jobs:
         file: ./backend/coverage/lcov.info
         fail_ci_if_error: true
 
-  # 🔒 Security Scan
-  security:
+  # 🧪 Test Admin Panel
+  test-admin-panel:
     runs-on: ubuntu-latest
-    needs: test
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run security audit
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: admin-panel/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./admin-panel
+      run: npm ci
+
+    - name: Run TypeScript check
+      working-directory: ./admin-panel
+      run: npx tsc --noEmit
+
+    - name: Run ESLint
+      working-directory: ./admin-panel
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Build application
+      working-directory: ./admin-panel
+      run: npm run build
+      env:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+
+  # 🔒 Security Scan
+  security:
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-admin-panel]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run backend security audit
       working-directory: ./backend
+      run: npm audit --audit-level moderate
+
+    - name: Run admin panel security audit
+      working-directory: ./admin-panel
       run: npm audit --audit-level moderate
 
     - name: Run Snyk security scan
@@ -97,7 +135,7 @@ jobs:
   # 🐳 Build Docker Image
   build:
     runs-on: ubuntu-latest
-    needs: [test, security]
+    needs: [test-backend, test-admin-panel, security]
     if: github.ref == 'refs/heads/main'
     
     steps:

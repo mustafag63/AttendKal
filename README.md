@@ -6,11 +6,11 @@ A comprehensive student attendance tracking system built with **Flutter** and **
 
 ### Backend (Node.js Express)
 - **Framework**: Express.js with modern ES6+ features
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM for all environments
 - **Authentication**: JWT-based with refresh tokens
 - **Security**: Comprehensive security middleware (Helmet, CORS, Rate Limiting)
 - **Documentation**: Auto-generated Swagger/OpenAPI docs
-- **Monitoring**: Prometheus metrics and Winston logging
+- **Monitoring**: Prometheus metrics, Winston + Pino logging
 - **Testing**: Jest with Supertest integration
 
 ### Frontend (Flutter)
@@ -358,6 +358,66 @@ Built with ❤️ using modern technologies:
 - **Prisma** for type-safe database access
 - **JWT** for secure authentication
 
+## Local Dev (API + Admin)
+
+**Backend**
+```bash
+cd backend
+pnpm i
+pnpm prisma:gen
+pnpm prisma:push
+pnpm seed:admin   # admin@attendkal.com / Admin123!
+pnpm dev          # http://localhost:3000
+```
+
+**Admin Panel**
+```bash
+cd admin-panel
+npm i
+npm run dev       # http://localhost:3001
+```
+
+**Database**
+- All environments: PostgreSQL with proper migrations
+- Development: Docker Compose PostgreSQL service
+- CI/Testing: GitHub Actions PostgreSQL service
+- Production: Configure your PostgreSQL DATABASE_URL
+
 ---
 
-**AttendKal** - Making attendance tracking simple, secure, and smart! 🎓 
+**AttendKal** - Making attendance tracking simple, secure, and smart! 🎓
+
+## Local Dev (PostgreSQL + Prisma)
+
+**Start DB**
+```bash
+docker compose up -d postgres
+```
+
+**Backend**
+```bash
+cd backend
+pnpm i
+pnpm prisma:gen
+pnpm prisma:migrate:dev    # Create initial migration
+pnpm seed:admin           # admin@attendkal.com / Admin123!
+pnpm dev                  # http://localhost:3000
+```
+
+**Admin Panel**
+```bash
+cd admin-panel
+npm i
+npm run dev               # http://localhost:3001
+```
+
+**Production Migration**
+```bash
+# In production/staging, use:
+pnpm prisma:migrate:deploy  # Never use prisma:push in prod!
+```
+
+**Database URLs**
+- Development: `postgresql://attendkal:attendkal@localhost:5432/attendkal`
+- CI/Testing: PostgreSQL service (see .github/workflows/ci.yml)
+- Production: Configure your PostgreSQL DATABASE_URL 
