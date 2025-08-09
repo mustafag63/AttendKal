@@ -3,7 +3,7 @@ import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { logger } from '../config/logger.js';
 
 // Get all courses for a user
-export const getCourses = catchAsync(async (req, res, next) => {
+export const getCourses = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, search = '' } = req.query;
   const offset = (page - 1) * limit;
 
@@ -333,7 +333,7 @@ export const deleteCourse = catchAsync(async (req, res, next) => {
 });
 
 // Get course statistics
-export const getCourseStats = catchAsync(async (req, res, next) => {
+export const getCourseStats = catchAsync(async (req, res) => {
   const userId = req.user.id;
 
   const [totalCourses, recentAttendance, overallStats] = await Promise.all([

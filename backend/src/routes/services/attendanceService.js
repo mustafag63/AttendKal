@@ -421,4 +421,7 @@ export class AttendanceService {
 
     return streak;
   }
-} 
+}
+
+// Export the class for static method usage
+export const attendanceService = AttendanceService; 

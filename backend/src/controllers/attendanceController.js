@@ -3,7 +3,7 @@ import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { logger } from '../config/logger.js';
 
 // Get attendance records
-export const getAttendance = catchAsync(async (req, res, next) => {
+export const getAttendance = catchAsync(async (req, res) => {
   const { courseId, page = 1, limit = 50 } = req.query;
   const offset = (page - 1) * limit;
 
@@ -143,7 +143,7 @@ export const markAttendance = catchAsync(async (req, res, next) => {
 });
 
 // Get attendance statistics
-export const getAttendanceStats = catchAsync(async (req, res, next) => {
+export const getAttendanceStats = catchAsync(async (req, res) => {
   const { courseId } = req.query;
   const userId = req.user.id;
 

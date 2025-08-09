@@ -13,7 +13,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "seed:admin": "ts-node ./scripts/seedAdmin.ts || node --loader ts-node/esm ./scripts/seedAdmin.ts || node ./scripts/seedAdmin.ts",
-    "test": "echo \"(add backend tests here)\" && exit 0",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "dev:old": "nodemon src/server.js",
     "test:jest": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "jest --watch",

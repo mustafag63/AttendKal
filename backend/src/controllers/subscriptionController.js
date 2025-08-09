@@ -1,41 +1,70 @@
 import { catchAsync } from '../middleware/errorHandler.js';
-import { config } from '../config/index.js';
+import { subscriptionService } from '../routes/services/subscriptionService.js';
+import { AppError } from '../middleware/errorHandler.js';
 
-// Get user subscription - simplified for now
+// Get user subscription
 export const getSubscription = catchAsync(async (req, res, next) => {
-  const disabled = process.env.SUBSCRIPTION_ENABLED === 'false';
+  try {
+    const subscription = await subscriptionService.getSubscription(req.user.id);
+    res.status(200).json({
+      status: 'success',
+      data: subscription,
+    });
+  } catch (error) {
+    // If user doesn't have a subscription, create a FREE one
+    if (error.statusCode === 404) {
+      const newSubscription = await subscriptionService.createSubscription({
+        userId: req.user.id,
+        plan: 'FREE',
+      });
+      res.status(200).json({
+        status: 'success',
+        data: newSubscription,
+      });
+    } else {
+      next(error);
+    }
+  }
+});
+
+// Get available subscription plans
+export const getSubscriptionPlans = catchAsync(async (req, res) => {
+  const plans = await subscriptionService.getSubscriptionPlans();
   res.status(200).json({
     status: 'success',
-    data: {
-      id: 'default-subscription',
-      type: disabled ? 'PRO' : 'FREE',
-      isActive: true,
-      startDate: new Date().toISOString(),
-      endDate: null,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+    data: plans,
   });
 });
 
-// Upgrade subscription - placeholder
+// Change subscription plan (free during beta)
+export const changeSubscriptionPlan = catchAsync(async (req, res, next) => {
+  const { plan } = req.body;
+
+  if (!plan) {
+    return next(new AppError('Plan is required', 400));
+  }
+
+  const updatedSubscription = await subscriptionService.changeSubscriptionPlan(req.user.id, { plan });
+  
+  res.status(200).json({
+    status: 'success',
+    message: `Successfully switched to ${plan} plan`,
+    data: updatedSubscription,
+  });
+});
+
+// Legacy upgrade subscription endpoint (for backward compatibility)
 export const upgradeSubscription = catchAsync(async (req, res, next) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Subscription upgrade feature is coming soon!',
-    data: {
-      type: 'PRO',
-      isActive: true,
-    },
-  });
+  return changeSubscriptionPlan(req, res, next);
 });
 
-// Cancel subscription - placeholder  
-export const cancelSubscription = catchAsync(async (req, res, next) => {
+// Cancel subscription
+export const cancelSubscription = catchAsync(async (req, res) => {
+  const cancelledSubscription = await subscriptionService.cancelSubscription(req.user.id);
+  
   res.status(200).json({
     status: 'success',
-    message: 'Subscription cancellation feature is coming soon!',
+    message: 'Subscription cancelled successfully',
+    data: cancelledSubscription,
   });
 }); 

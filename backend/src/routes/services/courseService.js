@@ -1,6 +1,6 @@
-import { prisma } from '../utils/prisma.js';
-import { AppError } from '../middleware/errorHandler.js';
-import { config } from '../config/index.js';
+import { prisma } from '../../utils/prisma.js';
+import { AppError } from '../../middleware/errorHandler.js';
+import { config } from '../../config/index.js';
 
 export class CourseService {
   // Get user courses with pagination
@@ -263,24 +263,54 @@ export class CourseService {
     if (process.env.SUBSCRIPTION_ENABLED === 'false') {
       return; // Bypass limits when subscription is disabled
     }
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId },
-    });
+    
+    // Import subscription service
+    const { subscriptionService } = await import('./subscriptionService.js');
+    
+    try {
+      const subscription = await subscriptionService.getSubscription(userId);
 
-    if (!subscription || !subscription.isActive) {
-      throw new AppError('No active subscription found', 403);
-    }
+      if (!subscription || subscription.status !== 'ACTIVE') {
+        throw new AppError('No active subscription found', 403);
+      }
 
-    if (subscription.type === 'FREE') {
-      const courseCount = await prisma.course.count({
-        where: { userId, isActive: true },
-      });
+      if (subscription.plan === 'FREE') {
+        const courseCount = await prisma.course.count({
+          where: { userId, isActive: true },
+        });
 
-      if (courseCount >= config.app.subscriptionLimits.free) {
-        throw new AppError(
-          `Free plan allows maximum ${config.app.subscriptionLimits.free} courses. Upgrade to Pro for unlimited courses.`,
-          403
-        );
+        // Get current plan features
+        const planFeatures = await subscriptionService.getPlanFeatures(subscription.plan);
+        const courseLimit = 2; // Free plan limit
+
+        if (courseCount >= courseLimit) {
+          throw new AppError(
+            `Free plan allows maximum ${courseLimit} courses. Change to Premium plan for unlimited courses.`,
+            403
+          );
+        }
+      }
+    } catch (error) {
+      if (error.statusCode === 404) {
+        // User doesn't have subscription, create a FREE one
+        await subscriptionService.createSubscription({
+          userId,
+          plan: 'FREE',
+        });
+        
+        // Check limits again for FREE plan
+        const courseCount = await prisma.course.count({
+          where: { userId, isActive: true },
+        });
+
+        if (courseCount >= 2) {
+          throw new AppError(
+            'Free plan allows maximum 2 courses. Change to Premium plan for unlimited courses.',
+            403
+          );
+        }
+      } else {
+        throw error;
       }
     }
   }
@@ -317,4 +347,7 @@ export class CourseService {
       }
     }
   }
-} 
+}
+
+// Export the class for static method usage
+export const courseService = CourseService; 

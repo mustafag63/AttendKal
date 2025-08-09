@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../utils/prisma.js';
-import { AppError } from '../middleware/errorHandler.js';
+import { prisma } from '../../utils/prisma.js';
+import { AppError } from '../../middleware/errorHandler.js';
 
 export class AuthService {
   // Generate JWT tokens
@@ -153,4 +153,7 @@ export class AuthService {
       }),
     ]);
   }
-} 
+}
+
+// Export the class for static method usage
+export const authService = AuthService; 

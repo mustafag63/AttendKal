@@ -124,7 +124,7 @@ export const login = catchAsync(async (req, res, next) => {
 });
 
 // Logout user
-export const logout = catchAsync(async (req, res, next) => {
+export const logout = catchAsync(async (req, res) => {
   const { refreshToken } = req.body;
 
   if (refreshToken) {
@@ -204,7 +204,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 });
 
 // Get current user
-export const getMe = catchAsync(async (req, res, next) => {
+export const getMe = catchAsync(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
     select: {

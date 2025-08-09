@@ -16,7 +16,12 @@ model User {
   role           Role           @default(USER)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  
+  // Relations
   attendances    Attendance[]
+  courses        Course[]
+  subscription   Subscription?
+  userSessions   UserSession[]
 
   // ---- EKLENEN ALANLAR ----
   isActive       Boolean        @default(true)
@@ -35,9 +40,21 @@ model Course {
   end         String        // "11:00"
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  
+  // Relations
   attendances Attendance[]
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Additional fields
+  description String?
+  instructor  String?
+  room        String?
+  color       String?
+  isActive    Boolean       @default(true)
 
   @@index([code])
+  @@index([userId])
 }
 
 model Attendance {
@@ -45,16 +62,59 @@ model Attendance {
   userId    String
   courseId  String
   date      DateTime
-  status    Status    @default(PRESENT)
+  status    Status   @default(PRESENT)
+  note      String?
+  location  Json?    // GPS coordinates
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, courseId, date])
   @@index([date])
   @@unique([userId, courseId, date])
+}
+
+model Subscription {
+  id        String            @id @default(cuid())
+  userId    String            @unique
+  plan      SubscriptionPlan  @default(FREE)
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime          @default(now())
+  endDate   DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  
+  // Relations
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Payment fields (for future use)
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
 }
 
 enum Role {
@@ -66,9 +126,21 @@ enum Status {
   PRESENT
   ABSENT
   LATE
+  EXCUSED
 }
 
 enum AccountStatus {
   ACTIVE
   DEACTIVATED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
 }

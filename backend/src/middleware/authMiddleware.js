@@ -73,7 +73,7 @@ export const checkOwnership = (resourceUserIdField = 'userId') => {
     } else if (req.route.path.includes('attendance')) {
       resource = await prisma.attendance.findUnique({ where: { id: resourceId } });
     } else if (req.route.path.includes('subscriptions')) {
-      resource = await prisma.subscription.findUnique({ where: { id: resourceId } });
+      resource = await prisma.subscription.findUnique({ where: { userId: resourceId } });
     }
 
     if (!resource) {
