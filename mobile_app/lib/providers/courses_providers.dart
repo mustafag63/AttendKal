@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 
 class CoursesSummary {
   final int totalCourses;

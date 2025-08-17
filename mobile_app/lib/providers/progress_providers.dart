@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 
 // Overall dashboard stats provider
 final overallProgressProvider = FutureProvider<Map<String, dynamic>>((

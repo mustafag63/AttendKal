@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -9,33 +8,12 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
-import '../../core/env.dart';
-
 part 'db.g.dart';
 
 // Enums
-enum AttendanceStatus { present, absent, late, excused }
+enum AttendanceStatus { present, absent, excused }
 
-enum ReminderType {
-  courseMorning, // Ders günü sabah hatırlatıcısı
-  coursePreStart, // Dersten önce hatırlatıcı
-  custom, // Serbest hatırlatıcı
-}
-
-enum RepeatType {
-  once, // Tek seferlik
-  daily, // Her gün
-  weekly, // Her hafta
-  monthly, // Her ay
-}
-
-enum NotificationActionType {
-  attended, // Katıldım
-  missed, // Kaçırdım
-  snooze10, // 10dk snooze
-  snooze30, // 30dk snooze
-  snooze2h, // 2 saat snooze
-}
+enum NotificationActionType { attended, missed, snooze10, snooze30, snooze2h }
 
 // Type Converters
 class ColorConverter extends TypeConverter<Color, int> {
@@ -51,23 +29,6 @@ class ColorConverter extends TypeConverter<Color, int> {
     return value.value;
   }
 }
-
-class StringListConverter extends TypeConverter<List<String>, String> {
-  const StringListConverter();
-
-  @override
-  List<String> fromSql(String fromDb) {
-    return (jsonDecode(fromDb) as List).cast<String>();
-  }
-
-  @override
-  String toSql(List<String> value) {
-    return jsonEncode(value);
-  }
-}
-
-// Enums
-enum AttendanceStatus { present, absent, excused }
 
 // Tables
 class Courses extends Table {
@@ -89,8 +50,8 @@ class Courses extends Table {
 class Meetings extends Table {
   TextColumn get id => text()();
   TextColumn get courseId => text().references(Courses, #id)();
-  IntColumn get weekday => integer()(); // 1=Monday, 7=Sunday
-  TextColumn get startHHmm => text()(); // "09:30"
+  IntColumn get weekday => integer()();
+  TextColumn get startHHmm => text()();
   IntColumn get durationMin => integer()();
   TextColumn get location => text().nullable()();
   TextColumn get note => text().nullable()();
@@ -102,9 +63,9 @@ class Meetings extends Table {
 class Sessions extends Table {
   TextColumn get id => text()();
   TextColumn get courseId => text().references(Courses, #id)();
-  IntColumn get startUtc => integer()(); // milliseconds since epoch
+  IntColumn get startUtc => integer()();
   IntColumn get durationMin => integer()();
-  TextColumn get source => text()(); // "manual", "generated", "imported"
+  TextColumn get source => text()();
   TextColumn get generatedFromMeetingId => text().nullable()();
 
   @override
@@ -151,22 +112,9 @@ class SyncQueue extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entity => text()();
   TextColumn get entityId => text()();
-  TextColumn get op => text()(); // "create", "update", "delete"
+  TextColumn get op => text()();
   TextColumn get payloadJson => text()();
   IntColumn get createdAt => integer()();
-}
-
-class NotificationActions extends Table {
-  TextColumn get id => text()();
-  TextColumn get reminderId => text()();
-  IntColumn get actionType => intEnum<NotificationActionType>()();
-  IntColumn get timestamp => integer()();
-  TextColumn get sessionId => text().nullable()();
-  TextColumn get metadata => text().nullable()();
-  IntColumn get createdAt => integer()();
-
-  @override
-  Set<Column> get primaryKey => {id};
 }
 
 @DriftDatabase(
@@ -176,7 +124,6 @@ class NotificationActions extends Table {
     Sessions,
     Attendance,
     Reminders,
-    NotificationActions,
     Settings,
     SyncQueue,
   ],
@@ -196,7 +143,6 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
 
-        // Create indexes
         await customStatement('''
           CREATE INDEX idx_sessions_course_start 
           ON sessions(course_id, start_utc);
@@ -208,10 +154,8 @@ class AppDatabase extends _$AppDatabase {
         ''');
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle migrations here
         if (from < 2) {
-          // Migration example
-          // await m.addColumn(courses, courses.newColumn);
+          // Future migrations
         }
       },
     );
@@ -290,11 +234,11 @@ class AppDatabase extends _$AppDatabase {
       (delete(sessions)..where((s) => s.id.equals(id))).go();
 
   // Attendance DAO
-  Future<Attendance?> getAttendanceForSession(String sessionId) => (select(
+  Future<AttendanceData?> getAttendanceForSession(String sessionId) => (select(
     attendance,
   )..where((a) => a.sessionId.equals(sessionId))).getSingleOrNull();
 
-  Future<List<Attendance>> getAttendanceForCourse(String courseId) async {
+  Future<List<AttendanceData>> getAttendanceForCourse(String courseId) async {
     final query = select(attendance).join([
       innerJoin(sessions, sessions.id.equalsExp(attendance.sessionId)),
     ])..where(sessions.courseId.equals(courseId));
@@ -306,7 +250,7 @@ class AppDatabase extends _$AppDatabase {
   Future<int> insertAttendance(AttendanceCompanion attendanceRecord) =>
       into(attendance).insert(attendanceRecord);
 
-  Future<bool> updateAttendance(Attendance attendanceRecord) =>
+  Future<bool> updateAttendanceData(AttendanceData attendanceRecord) =>
       update(attendance).replace(attendanceRecord);
 
   Future<int> deleteAttendance(String id) =>
@@ -419,49 +363,6 @@ class AppDatabase extends _$AppDatabase {
           ..orderBy([(s) => OrderingTerm.asc(s.startUtc)]))
         .get();
   }
-
-  // Reminder operations
-  Future<List<Reminder>> getAllReminders() => select(reminders).get();
-
-  Future<List<Reminder>> getActiveReminders() =>
-      (select(reminders)..where((r) => r.isActive.equals(true))).get();
-
-  Future<List<Reminder>> getRemindersByTimeRange(int startTime, int endTime) =>
-      (select(reminders)
-            ..where((r) => r.scheduledTime.isBetweenValues(startTime, endTime))
-            ..where((r) => r.isActive.equals(true))
-            ..orderBy([(r) => OrderingTerm(expression: r.scheduledTime)]))
-          .get();
-
-  Future<List<Reminder>> getRemindersByCourse(String courseId) =>
-      (select(reminders)..where((r) => r.courseId.equals(courseId))).get();
-
-  Future<int> insertReminder(RemindersCompanion reminder) =>
-      into(reminders).insert(reminder);
-
-  Future<bool> updateReminder(RemindersCompanion reminder) =>
-      update(reminders).replace(reminder);
-
-  Future<int> deleteReminder(String id) =>
-      (delete(reminders)..where((r) => r.id.equals(id))).go();
-
-  Future<void> deactivateReminder(String id) async {
-    await (update(reminders)..where((r) => r.id.equals(id))).write(
-      RemindersCompanion(isActive: const Value(false)),
-    );
-  }
-
-  // Notification Actions operations
-  Future<List<NotificationAction>> getNotificationActions() =>
-      select(notificationActions).get();
-
-  Future<int> insertNotificationAction(NotificationActionsCompanion action) =>
-      into(notificationActions).insert(action);
-
-  Future<List<NotificationAction>> getActionsByReminder(String reminderId) =>
-      (select(
-        notificationActions,
-      )..where((a) => a.reminderId.equals(reminderId))).get();
 }
 
 LazyDatabase _openConnection() {

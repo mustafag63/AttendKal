@@ -38,16 +38,22 @@ export const markAttendance = asyncHandler(
 
         // Create or update attendance
         const attendance = await prisma.attendance.upsert({
-            where: { sessionId },
+            where: {
+                userId_sessionId: {
+                    userId,
+                    sessionId
+                }
+            },
             create: {
+                userId,
                 sessionId,
                 status,
-                note,
+                notes: note,
             },
             update: {
                 status,
-                note,
-                markedAt: new Date(),
+                notes: note,
+                updatedAt: new Date(),
             },
             include: {
                 session: {

@@ -23,32 +23,36 @@ RUN npm run build
 # Production stage
 FROM node:18-alpine AS runtime
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and security updates
+RUN apk add --no-cache dumb-init && \
+    apk upgrade --no-cache
 
-# Create app user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S attendkal -u 1001
+# Create app user with specific UID/GID for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S attendkal -u 1001 -G nodejs
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files with proper ownership
+COPY --chown=attendkal:nodejs package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install only production dependencies and clean cache
+RUN npm ci --only=production --ignore-scripts && \
+    npm cache clean --force && \
+    rm -rf /tmp/*
 
-# Copy built application from builder stage
+# Copy built application from builder stage with security hardening
 COPY --from=builder --chown=attendkal:nodejs /app/dist ./dist
 COPY --from=builder --chown=attendkal:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=attendkal:nodejs /app/prisma ./prisma
 
-# Copy migration script
+# Copy migration script with restricted permissions
 COPY --chown=attendkal:nodejs docker-entrypoint.sh ./
+RUN chmod 755 docker-entrypoint.sh
 
-# Make entrypoint script executable
-RUN chmod +x docker-entrypoint.sh
+# Remove unnecessary packages and files for smaller attack surface
+RUN rm -rf /usr/share/man/* /tmp/* /var/cache/apk/* /root/.npm /usr/lib/node_modules/npm/man/* /usr/lib/node_modules/npm/doc/*
 
 # Switch to non-root user
 USER attendkal

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/local/database.dart';
+import '../../../data/local/db.dart';
 
 class SessionCard extends StatelessWidget {
   final Session session;

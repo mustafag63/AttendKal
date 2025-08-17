@@ -5,7 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 import 'package:drift/drift.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();

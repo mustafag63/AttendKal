@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 import '../providers/courses_providers.dart';
 import '../providers/progress_providers.dart';
 

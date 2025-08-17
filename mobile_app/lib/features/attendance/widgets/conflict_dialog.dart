@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../providers/attendance_providers.dart';
-import '../../../data/local/database.dart';
+import '../../../data/local/db.dart';
 
 class ConflictDialog extends StatelessWidget {
   final List<SessionData> conflicts;

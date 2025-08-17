@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 import '../services/notification_service.dart';
 
 // Database provider

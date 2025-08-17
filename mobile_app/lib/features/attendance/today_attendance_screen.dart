@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/attendance_providers.dart';
-import '../../data/local/database.dart';
+import '../../data/local/db.dart';
 import 'widgets/session_card.dart';
 import 'widgets/undo_snackbar.dart';
 import 'widgets/conflict_dialog.dart';

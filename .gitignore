@@ -1,0 +1,85 @@
+# ==========================================
+# ROOT PROJECT GITIGNORE
+# ==========================================
+
+# Environment files - CRITICAL SECURITY
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+
+# Docker sensitive files
+docker-compose.override.yml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+target/
+
+# Temporary files
+tmp/
+temp/
+.tmp
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Documentation build
+docs/_build/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Security and secrets
+*.pem
+*.p12
+*.key
+*.keystore
+secrets/
+certs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+
+# Package manager locks (keep for reproducible builds)
+# Uncomment if you want to ignore them:
+# package-lock.json
+# yarn.lock
+
+# Docker volumes data
+docker-data/

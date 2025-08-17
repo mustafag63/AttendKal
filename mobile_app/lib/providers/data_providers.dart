@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:drift/drift.dart';
-import '../data/local/database.dart';
+import '../data/local/db.dart';
 import '../providers/courses_providers.dart';
 
 // Data export/import service
