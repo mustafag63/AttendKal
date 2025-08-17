@@ -48,11 +48,11 @@ export const markAttendance = asyncHandler(
                 userId,
                 sessionId,
                 status,
-                notes: note,
+                note: note,
             },
             update: {
                 status,
-                notes: note,
+                note: note,
                 updatedAt: new Date(),
             },
             include: {

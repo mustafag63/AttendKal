@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/local/db.dart';
+import '../../../data/local/db.dart';
 
 class CourseCard extends StatelessWidget {
   final Course course;

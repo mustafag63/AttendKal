@@ -26,7 +26,7 @@ export const getCourses = asyncHandler(
                     include: {
                         attendance: true,
                     },
-                    orderBy: { dateTime: 'desc' },
+                    orderBy: { startUtc: 'desc' },
                     take: 5, // Latest 5 sessions per course
                 },
                 _count: {
@@ -89,7 +89,7 @@ export const getCourse = asyncHandler(
                     include: {
                         attendance: true,
                     },
-                    orderBy: { dateTime: 'desc' },
+                    orderBy: { startUtc: 'desc' },
                 },
                 _count: {
                     select: {

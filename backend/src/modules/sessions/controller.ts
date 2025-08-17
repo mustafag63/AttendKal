@@ -26,9 +26,9 @@ export const getSessions = asyncHandler(
         }
 
         if (from || to) {
-            whereClause.dateTime = {};
-            if (from) whereClause.dateTime.gte = new Date(from);
-            if (to) whereClause.dateTime.lte = new Date(to);
+            whereClause.startUtc = {};
+            if (from) whereClause.startUtc.gte = new Date(from);
+            if (to) whereClause.startUtc.lte = new Date(to);
         }
 
         const sessions = await prisma.session.findMany({
@@ -44,7 +44,7 @@ export const getSessions = asyncHandler(
                 },
                 attendance: true,
             },
-            orderBy: { dateTime: 'desc' },
+            orderBy: { startUtc: 'desc' },
         });
 
         res.json({
@@ -76,8 +76,8 @@ export const createSession = asyncHandler(
         const session = await prisma.session.create({
             data: {
                 courseId,
-                dateTime: new Date(sessionData.startUtc),
-                duration: sessionData.durationMin,
+                startUtc: new Date(sessionData.startUtc),
+                durationMin: sessionData.durationMin,
                 source: sessionData.source,
             },
             include: {
@@ -147,17 +147,17 @@ export const generateSessions = asyncHandler(
                     const existingSession = await prisma.session.findFirst({
                         where: {
                             courseId,
-                            dateTime: sessionStart,
+                            startUtc: sessionStart,
                         },
                     });
 
                     if (!existingSession) {
                         sessionsToCreate.push({
                             courseId,
-                            dateTime: sessionStart,
-                            duration: meeting.durationMin,
+                            startUtc: sessionStart,
+                            durationMin: meeting.durationMin,
                             source: 'AUTO' as const,
-                            meetingId: meeting.id,
+                            generatedFromMeetingId: meeting.id,
                         });
                     }
                 }

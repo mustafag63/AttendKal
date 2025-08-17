@@ -55,7 +55,7 @@ model Course {
   location     String?
   color        String?  @default("#3B82F6") // Default blue color
   note         String?
-  maxAbsences  Int      @default(3)
+  maxAbsences  Int      // Required field for attendance tracking
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -89,9 +89,10 @@ model Session {
   id        String   @id @default(uuid())
   courseId  String
   meetingId String?  // Optional relation to Meeting that generated this session
-  dateTime  DateTime
-  duration  Int // in minutes
+  startUtc  DateTime // UTC timestamp for session start
+  durationMin Int    // Duration in minutes
   source    String   @default("AUTO") // "AUTO" or "MANUAL"
+  generatedFromMeetingId String? // Reference to original meeting
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -101,15 +102,17 @@ model Session {
   attendance   Attendance[]
   fromMeeting  Meeting?     @relation("GeneratedFromMeeting", fields: [meetingId], references: [id])
 
+  @@index([courseId, startUtc])
   @@map("sessions")
 }
 
 model Attendance {
   id        String   @id @default(uuid())
   userId    String
-  sessionId String
+  sessionId String   @unique // Each session can have only one attendance record per user
   status    String   @default("PRESENT") // "PRESENT", "ABSENT", "EXCUSED"
-  notes     String?
+  note      String?
+  markedAt  DateTime @default(now())
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -119,6 +122,7 @@ model Attendance {
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, sessionId])
+  @@index([status])
   @@map("attendance")
 }
 

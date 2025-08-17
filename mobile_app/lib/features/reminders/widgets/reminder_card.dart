@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/local/db.dart';
+import '../../../data/local/db.dart';
 
 class ReminderCard extends StatelessWidget {
   final Reminder reminder;

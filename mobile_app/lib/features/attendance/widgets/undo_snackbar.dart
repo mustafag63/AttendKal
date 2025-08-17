@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../providers/attendance_providers.dart';
-import '../data/local/db.dart';
+import '../../../data/local/db.dart';
 
 class UndoSnackbar extends StatelessWidget {
   final UndoAction undoAction;

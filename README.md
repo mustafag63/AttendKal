@@ -27,8 +27,8 @@ cp .env.example .env
 npx prisma migrate dev
 npm run dev
 
-# Frontend setup (coming soon)
-cd ../frontend
+# Mobile app setup (coming soon)
+cd ../mobile_app
 flutter pub get
 flutter run
 ```
@@ -37,7 +37,7 @@ flutter run
 
 - **[🐳 Docker Guide](DOCKER_GUIDE.md)** - Complete Docker setup and operations
 - **[🔧 Backend API](backend/README.md)** - API documentation and development
-- **[📱 Frontend App](frontend/README.md)** - Flutter app development (coming soon)
+- **[📱 Mobile App](mobile_app/README.md)** - Flutter app development (coming soon)
 
 ## 🏗️ Architecture
 
@@ -55,7 +55,7 @@ Attendkal/
 │   │   └── middlewares/    # Express middlewares
 │   ├── prisma/             # Database schema
 │   └── docs/               # API documentation
-├── frontend/               # Flutter mobile app (coming soon)
+├── mobile_app/             # Flutter mobile app (coming soon)
 └── docker-compose.yml      # Docker orchestration
 ```
 
