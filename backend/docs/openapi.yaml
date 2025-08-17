@@ -1,0 +1,625 @@
+openapi: 3.0.3
+info:
+  title: Attendkal API
+  description: University attendance tracker backend API
+  version: 1.0.0
+  contact:
+    name: Attendkal Team
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Server status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  timestamp:
+                    type: string
+                    format: date-time
+                  environment:
+                    type: string
+                    example: development
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /api/auth/register:
+    post:
+      summary: Register new user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 20
+                timezone:
+                  type: string
+                  default: UTC
+                locale:
+                  type: string
+                  default: en
+      responses:
+        '201':
+          description: User registered successfully
+        '409':
+          description: User already exists
+
+  /api/auth/login:
+    post:
+      summary: User login
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+
+  /api/auth/me:
+    get:
+      summary: Get user profile
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+        '401':
+          description: Unauthorized
+
+  /api/courses:
+    get:
+      summary: Get user courses
+      tags: [Courses]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of courses with statistics
+    post:
+      summary: Create new course
+      tags: [Courses]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - maxAbsences
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                code:
+                  type: string
+                  maxLength: 20
+                teacher:
+                  type: string
+                  maxLength: 100
+                location:
+                  type: string
+                  maxLength: 100
+                color:
+                  type: string
+                  pattern: '^#[0-9A-F]{6}$'
+                note:
+                  type: string
+                  maxLength: 500
+                maxAbsences:
+                  type: integer
+                  minimum: 0
+                  maximum: 50
+      responses:
+        '201':
+          description: Course created successfully
+
+  /api/courses/{id}:
+    get:
+      summary: Get course details
+      tags: [Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Course details
+        '404':
+          description: Course not found
+    put:
+      summary: Update course
+      tags: [Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                code:
+                  type: string
+                  maxLength: 20
+                teacher:
+                  type: string
+                  maxLength: 100
+                location:
+                  type: string
+                  maxLength: 100
+                color:
+                  type: string
+                  pattern: '^#[0-9A-F]{6}$'
+                note:
+                  type: string
+                  maxLength: 500
+                maxAbsences:
+                  type: integer
+                  minimum: 0
+                  maximum: 50
+      responses:
+        '200':
+          description: Course updated successfully
+        '404':
+          description: Course not found
+    delete:
+      summary: Delete course
+      tags: [Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Course deleted successfully
+        '404':
+          description: Course not found
+
+  /api/courses/{id}/meetings:
+    post:
+      summary: Create meeting for course
+      tags: [Meetings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - weekday
+                - startHHmm
+              properties:
+                weekday:
+                  type: integer
+                  minimum: 1
+                  maximum: 7
+                  description: 1=Monday, 7=Sunday
+                startHHmm:
+                  type: string
+                  pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+                  example: "14:30"
+                durationMin:
+                  type: integer
+                  minimum: 15
+                  maximum: 480
+                  default: 90
+                location:
+                  type: string
+                  maxLength: 100
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        '201':
+          description: Meeting created successfully
+        '404':
+          description: Course not found
+
+  /api/courses/{id}/meetings/{mid}:
+    delete:
+      summary: Delete meeting
+      tags: [Meetings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Meeting deleted successfully
+        '404':
+          description: Meeting not found
+
+  /api/sessions:
+    get:
+      summary: Get sessions
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: courseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of sessions
+
+  /api/sessions/generate:
+    post:
+      summary: Generate sessions from meetings
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - from
+                - to
+              properties:
+                courseId:
+                  type: string
+                  format: uuid
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Sessions generated successfully
+
+  /api/sessions/{courseId}:
+    post:
+      summary: Create manual session
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - startUtc
+              properties:
+                startUtc:
+                  type: string
+                  format: date-time
+                durationMin:
+                  type: integer
+                  minimum: 15
+                  maximum: 480
+                  default: 90
+                source:
+                  type: string
+                  enum: [AUTO, MANUAL]
+                  default: MANUAL
+      responses:
+        '201':
+          description: Session created successfully
+
+  /api/attendance/{sessionId}:
+    get:
+      summary: Get attendance for session
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session attendance
+        '404':
+          description: Session not found
+    post:
+      summary: Mark attendance
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [PRESENT, ABSENT, EXCUSED]
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Attendance marked successfully
+        '404':
+          description: Session not found
+
+  /api/reminders:
+    get:
+      summary: Get user reminders
+      tags: [Reminders]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of reminders
+    post:
+      summary: Create reminder
+      tags: [Reminders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                courseId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  maxLength: 200
+                morningOfClass:
+                  type: boolean
+                  default: true
+                minutesBefore:
+                  type: integer
+                  minimum: 0
+                  maximum: 1440
+                  default: 60
+                thresholdAlerts:
+                  type: boolean
+                  default: true
+                cron:
+                  type: string
+                  maxLength: 100
+                enabled:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Reminder created successfully
+
+  /api/reminders/{id}:
+    get:
+      summary: Get reminder details
+      tags: [Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reminder details
+        '404':
+          description: Reminder not found
+    put:
+      summary: Update reminder
+      tags: [Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                courseId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  maxLength: 200
+                morningOfClass:
+                  type: boolean
+                minutesBefore:
+                  type: integer
+                  minimum: 0
+                  maximum: 1440
+                thresholdAlerts:
+                  type: boolean
+                cron:
+                  type: string
+                  maxLength: 100
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Reminder updated successfully
+        '404':
+          description: Reminder not found
+    delete:
+      summary: Delete reminder
+      tags: [Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reminder deleted successfully
+        '404':
+          description: Reminder not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+
+tags:
+  - name: System
+    description: System endpoints
+  - name: Authentication
+    description: User authentication
+  - name: Courses
+    description: Course management
+  - name: Meetings
+    description: Meeting management
+  - name: Sessions
+    description: Session management
+  - name: Attendance
+    description: Attendance tracking
+  - name: Reminders
+    description: Reminder management
