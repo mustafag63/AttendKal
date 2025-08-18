@@ -18,18 +18,20 @@ final courseProgressListProvider = FutureProvider<List<Map<String, dynamic>>>((
 });
 
 // Weekly trend provider
-final weeklyTrendProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, int>((ref, weeks) async {
-      final database = AppDatabase.instance;
-      return await database.getWeeklyTrend(weeks: weeks);
-    });
+final weeklyTrendProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  final database = AppDatabase.instance;
+  return await database.getWeeklyTrend();
+});
 
 // Daily heatmap provider
-final dailyHeatmapProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, int>((ref, days) async {
-      final database = AppDatabase.instance;
-      return await database.getDailyHeatmap(days: days);
-    });
+final dailyHeatmapProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  final database = AppDatabase.instance;
+  return await database.getDailyHeatmap();
+});
 
 // Auto-refresh progress data when attendance changes
 final progressRefreshProvider = StateProvider<int>((ref) => 0);

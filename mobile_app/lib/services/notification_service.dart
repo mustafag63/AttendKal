@@ -90,18 +90,18 @@ class NotificationService {
 
     // Record the action
     await _db.insertNotificationAction(
-      NotificationActionsCompanion(
-        id: Value(_generateId()),
-        reminderId: Value(reminderId),
-        actionType: Value(action),
-        timestamp: Value(DateTime.now().millisecondsSinceEpoch),
+      NotificationActionsCompanion.insert(
+        id: _generateId(),
+        reminderId: reminderId,
+        actionType: action,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
         sessionId: payload['sessionId'] != null
             ? Value(payload['sessionId'])
             : const Value.absent(),
         metadata: payload['metadata'] != null
             ? Value(payload['metadata'])
             : const Value.absent(),
-        createdAt: Value(DateTime.now().millisecondsSinceEpoch),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
 
@@ -171,12 +171,31 @@ class NotificationService {
     );
 
     // Update reminder with notification ID
-    await _db.updateReminder(
-      RemindersCompanion(
-        id: Value(reminder.id),
-        notificationId: Value(notificationId),
-      ),
-    );
+    final existingReminder = await _db.getReminderById(reminder.id);
+    if (existingReminder != null) {
+      final updatedReminder = Reminder(
+        id: existingReminder.id,
+        userId: existingReminder.userId,
+        courseId: existingReminder.courseId,
+        title: existingReminder.title,
+        description: existingReminder.description,
+        type: existingReminder.type,
+        scheduledTime: existingReminder.scheduledTime,
+        repeatType: existingReminder.repeatType,
+        repeatInterval: existingReminder.repeatInterval,
+        isActive: existingReminder.isActive,
+        notificationId: notificationId,
+        metadata: existingReminder.metadata,
+        morningOfClass: existingReminder.morningOfClass,
+        minutesBefore: existingReminder.minutesBefore,
+        thresholdAlerts: existingReminder.thresholdAlerts,
+        cron: existingReminder.cron,
+        enabled: existingReminder.enabled,
+        createdAt: existingReminder.createdAt,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await _db.updateReminder(updatedReminder);
+    }
 
     String title = reminder.title;
     String body = reminder.description ?? '';
@@ -288,8 +307,8 @@ class NotificationService {
   /// Schedule notifications for the next 7-14 days
   Future<void> scheduleUpcomingNotifications() async {
     final now = DateTime.now();
-    final startTime = now.millisecondsSinceEpoch;
-    final endTime = now.add(const Duration(days: 14)).millisecondsSinceEpoch;
+    final startTime = now;
+    final endTime = now.add(const Duration(days: 14));
 
     // Get active reminders in the time range
     final reminders = await _db.getRemindersByTimeRange(startTime, endTime);

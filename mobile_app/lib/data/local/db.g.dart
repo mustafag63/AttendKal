@@ -1116,6 +1116,15 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _endUtcMeta = const VerificationMeta('endUtc');
+  @override
+  late final GeneratedColumn<int> endUtc = GeneratedColumn<int>(
+    'end_utc',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _durationMinMeta = const VerificationMeta(
     'durationMin',
   );
@@ -1147,14 +1156,77 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _wasCancelledMeta = const VerificationMeta(
+    'wasCancelled',
+  );
+  @override
+  late final GeneratedColumn<bool> wasCancelled = GeneratedColumn<bool>(
+    'was_cancelled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("was_cancelled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _cancellationReasonMeta =
+      const VerificationMeta('cancellationReason');
+  @override
+  late final GeneratedColumn<String> cancellationReason =
+      GeneratedColumn<String>(
+        'cancellation_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     courseId,
     startUtc,
+    endUtc,
     durationMin,
     source,
     generatedFromMeetingId,
+    note,
+    wasCancelled,
+    cancellationReason,
+    createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1189,6 +1261,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     } else if (isInserting) {
       context.missing(_startUtcMeta);
     }
+    if (data.containsKey('end_utc')) {
+      context.handle(
+        _endUtcMeta,
+        endUtc.isAcceptableOrUnknown(data['end_utc']!, _endUtcMeta),
+      );
+    }
     if (data.containsKey('duration_min')) {
       context.handle(
         _durationMinMeta,
@@ -1217,6 +1295,46 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         ),
       );
     }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('was_cancelled')) {
+      context.handle(
+        _wasCancelledMeta,
+        wasCancelled.isAcceptableOrUnknown(
+          data['was_cancelled']!,
+          _wasCancelledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cancellation_reason')) {
+      context.handle(
+        _cancellationReasonMeta,
+        cancellationReason.isAcceptableOrUnknown(
+          data['cancellation_reason']!,
+          _cancellationReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
     return context;
   }
 
@@ -1238,6 +1356,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.int,
         data['${effectivePrefix}start_utc'],
       )!,
+      endUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_utc'],
+      ),
       durationMin: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}duration_min'],
@@ -1250,6 +1372,26 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}generated_from_meeting_id'],
       ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      wasCancelled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}was_cancelled'],
+      )!,
+      cancellationReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cancellation_reason'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -1263,16 +1405,28 @@ class Session extends DataClass implements Insertable<Session> {
   final String id;
   final String courseId;
   final int startUtc;
+  final int? endUtc;
   final int durationMin;
   final String source;
   final String? generatedFromMeetingId;
+  final String? note;
+  final bool wasCancelled;
+  final String? cancellationReason;
+  final int createdAt;
+  final int updatedAt;
   const Session({
     required this.id,
     required this.courseId,
     required this.startUtc,
+    this.endUtc,
     required this.durationMin,
     required this.source,
     this.generatedFromMeetingId,
+    this.note,
+    required this.wasCancelled,
+    this.cancellationReason,
+    required this.createdAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1280,6 +1434,9 @@ class Session extends DataClass implements Insertable<Session> {
     map['id'] = Variable<String>(id);
     map['course_id'] = Variable<String>(courseId);
     map['start_utc'] = Variable<int>(startUtc);
+    if (!nullToAbsent || endUtc != null) {
+      map['end_utc'] = Variable<int>(endUtc);
+    }
     map['duration_min'] = Variable<int>(durationMin);
     map['source'] = Variable<String>(source);
     if (!nullToAbsent || generatedFromMeetingId != null) {
@@ -1287,6 +1444,15 @@ class Session extends DataClass implements Insertable<Session> {
         generatedFromMeetingId,
       );
     }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['was_cancelled'] = Variable<bool>(wasCancelled);
+    if (!nullToAbsent || cancellationReason != null) {
+      map['cancellation_reason'] = Variable<String>(cancellationReason);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -1295,11 +1461,21 @@ class Session extends DataClass implements Insertable<Session> {
       id: Value(id),
       courseId: Value(courseId),
       startUtc: Value(startUtc),
+      endUtc: endUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endUtc),
       durationMin: Value(durationMin),
       source: Value(source),
       generatedFromMeetingId: generatedFromMeetingId == null && nullToAbsent
           ? const Value.absent()
           : Value(generatedFromMeetingId),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      wasCancelled: Value(wasCancelled),
+      cancellationReason: cancellationReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancellationReason),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -1312,11 +1488,19 @@ class Session extends DataClass implements Insertable<Session> {
       id: serializer.fromJson<String>(json['id']),
       courseId: serializer.fromJson<String>(json['courseId']),
       startUtc: serializer.fromJson<int>(json['startUtc']),
+      endUtc: serializer.fromJson<int?>(json['endUtc']),
       durationMin: serializer.fromJson<int>(json['durationMin']),
       source: serializer.fromJson<String>(json['source']),
       generatedFromMeetingId: serializer.fromJson<String?>(
         json['generatedFromMeetingId'],
       ),
+      note: serializer.fromJson<String?>(json['note']),
+      wasCancelled: serializer.fromJson<bool>(json['wasCancelled']),
+      cancellationReason: serializer.fromJson<String?>(
+        json['cancellationReason'],
+      ),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -1326,11 +1510,17 @@ class Session extends DataClass implements Insertable<Session> {
       'id': serializer.toJson<String>(id),
       'courseId': serializer.toJson<String>(courseId),
       'startUtc': serializer.toJson<int>(startUtc),
+      'endUtc': serializer.toJson<int?>(endUtc),
       'durationMin': serializer.toJson<int>(durationMin),
       'source': serializer.toJson<String>(source),
       'generatedFromMeetingId': serializer.toJson<String?>(
         generatedFromMeetingId,
       ),
+      'note': serializer.toJson<String?>(note),
+      'wasCancelled': serializer.toJson<bool>(wasCancelled),
+      'cancellationReason': serializer.toJson<String?>(cancellationReason),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -1338,24 +1528,39 @@ class Session extends DataClass implements Insertable<Session> {
     String? id,
     String? courseId,
     int? startUtc,
+    Value<int?> endUtc = const Value.absent(),
     int? durationMin,
     String? source,
     Value<String?> generatedFromMeetingId = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    bool? wasCancelled,
+    Value<String?> cancellationReason = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
   }) => Session(
     id: id ?? this.id,
     courseId: courseId ?? this.courseId,
     startUtc: startUtc ?? this.startUtc,
+    endUtc: endUtc.present ? endUtc.value : this.endUtc,
     durationMin: durationMin ?? this.durationMin,
     source: source ?? this.source,
     generatedFromMeetingId: generatedFromMeetingId.present
         ? generatedFromMeetingId.value
         : this.generatedFromMeetingId,
+    note: note.present ? note.value : this.note,
+    wasCancelled: wasCancelled ?? this.wasCancelled,
+    cancellationReason: cancellationReason.present
+        ? cancellationReason.value
+        : this.cancellationReason,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
       id: data.id.present ? data.id.value : this.id,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
       startUtc: data.startUtc.present ? data.startUtc.value : this.startUtc,
+      endUtc: data.endUtc.present ? data.endUtc.value : this.endUtc,
       durationMin: data.durationMin.present
           ? data.durationMin.value
           : this.durationMin,
@@ -1363,6 +1568,15 @@ class Session extends DataClass implements Insertable<Session> {
       generatedFromMeetingId: data.generatedFromMeetingId.present
           ? data.generatedFromMeetingId.value
           : this.generatedFromMeetingId,
+      note: data.note.present ? data.note.value : this.note,
+      wasCancelled: data.wasCancelled.present
+          ? data.wasCancelled.value
+          : this.wasCancelled,
+      cancellationReason: data.cancellationReason.present
+          ? data.cancellationReason.value
+          : this.cancellationReason,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1372,9 +1586,15 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('id: $id, ')
           ..write('courseId: $courseId, ')
           ..write('startUtc: $startUtc, ')
+          ..write('endUtc: $endUtc, ')
           ..write('durationMin: $durationMin, ')
           ..write('source: $source, ')
-          ..write('generatedFromMeetingId: $generatedFromMeetingId')
+          ..write('generatedFromMeetingId: $generatedFromMeetingId, ')
+          ..write('note: $note, ')
+          ..write('wasCancelled: $wasCancelled, ')
+          ..write('cancellationReason: $cancellationReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1384,9 +1604,15 @@ class Session extends DataClass implements Insertable<Session> {
     id,
     courseId,
     startUtc,
+    endUtc,
     durationMin,
     source,
     generatedFromMeetingId,
+    note,
+    wasCancelled,
+    cancellationReason,
+    createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1395,58 +1621,96 @@ class Session extends DataClass implements Insertable<Session> {
           other.id == this.id &&
           other.courseId == this.courseId &&
           other.startUtc == this.startUtc &&
+          other.endUtc == this.endUtc &&
           other.durationMin == this.durationMin &&
           other.source == this.source &&
-          other.generatedFromMeetingId == this.generatedFromMeetingId);
+          other.generatedFromMeetingId == this.generatedFromMeetingId &&
+          other.note == this.note &&
+          other.wasCancelled == this.wasCancelled &&
+          other.cancellationReason == this.cancellationReason &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> id;
   final Value<String> courseId;
   final Value<int> startUtc;
+  final Value<int?> endUtc;
   final Value<int> durationMin;
   final Value<String> source;
   final Value<String?> generatedFromMeetingId;
+  final Value<String?> note;
+  final Value<bool> wasCancelled;
+  final Value<String?> cancellationReason;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.courseId = const Value.absent(),
     this.startUtc = const Value.absent(),
+    this.endUtc = const Value.absent(),
     this.durationMin = const Value.absent(),
     this.source = const Value.absent(),
     this.generatedFromMeetingId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.wasCancelled = const Value.absent(),
+    this.cancellationReason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsCompanion.insert({
     required String id,
     required String courseId,
     required int startUtc,
+    this.endUtc = const Value.absent(),
     required int durationMin,
     required String source,
     this.generatedFromMeetingId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.wasCancelled = const Value.absent(),
+    this.cancellationReason = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        courseId = Value(courseId),
        startUtc = Value(startUtc),
        durationMin = Value(durationMin),
-       source = Value(source);
+       source = Value(source),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<Session> custom({
     Expression<String>? id,
     Expression<String>? courseId,
     Expression<int>? startUtc,
+    Expression<int>? endUtc,
     Expression<int>? durationMin,
     Expression<String>? source,
     Expression<String>? generatedFromMeetingId,
+    Expression<String>? note,
+    Expression<bool>? wasCancelled,
+    Expression<String>? cancellationReason,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (courseId != null) 'course_id': courseId,
       if (startUtc != null) 'start_utc': startUtc,
+      if (endUtc != null) 'end_utc': endUtc,
       if (durationMin != null) 'duration_min': durationMin,
       if (source != null) 'source': source,
       if (generatedFromMeetingId != null)
         'generated_from_meeting_id': generatedFromMeetingId,
+      if (note != null) 'note': note,
+      if (wasCancelled != null) 'was_cancelled': wasCancelled,
+      if (cancellationReason != null) 'cancellation_reason': cancellationReason,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1455,19 +1719,31 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? id,
     Value<String>? courseId,
     Value<int>? startUtc,
+    Value<int?>? endUtc,
     Value<int>? durationMin,
     Value<String>? source,
     Value<String?>? generatedFromMeetingId,
+    Value<String?>? note,
+    Value<bool>? wasCancelled,
+    Value<String?>? cancellationReason,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return SessionsCompanion(
       id: id ?? this.id,
       courseId: courseId ?? this.courseId,
       startUtc: startUtc ?? this.startUtc,
+      endUtc: endUtc ?? this.endUtc,
       durationMin: durationMin ?? this.durationMin,
       source: source ?? this.source,
       generatedFromMeetingId:
           generatedFromMeetingId ?? this.generatedFromMeetingId,
+      note: note ?? this.note,
+      wasCancelled: wasCancelled ?? this.wasCancelled,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1484,6 +1760,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (startUtc.present) {
       map['start_utc'] = Variable<int>(startUtc.value);
     }
+    if (endUtc.present) {
+      map['end_utc'] = Variable<int>(endUtc.value);
+    }
     if (durationMin.present) {
       map['duration_min'] = Variable<int>(durationMin.value);
     }
@@ -1494,6 +1773,21 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       map['generated_from_meeting_id'] = Variable<String>(
         generatedFromMeetingId.value,
       );
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (wasCancelled.present) {
+      map['was_cancelled'] = Variable<bool>(wasCancelled.value);
+    }
+    if (cancellationReason.present) {
+      map['cancellation_reason'] = Variable<String>(cancellationReason.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -1507,9 +1801,15 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('id: $id, ')
           ..write('courseId: $courseId, ')
           ..write('startUtc: $startUtc, ')
+          ..write('endUtc: $endUtc, ')
           ..write('durationMin: $durationMin, ')
           ..write('source: $source, ')
           ..write('generatedFromMeetingId: $generatedFromMeetingId, ')
+          ..write('note: $note, ')
+          ..write('wasCancelled: $wasCancelled, ')
+          ..write('cancellationReason: $cancellationReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1545,6 +1845,15 @@ class $AttendanceTable extends Attendance
       'UNIQUE REFERENCES sessions (id)',
     ),
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<AttendanceStatus, int> status =
       GeneratedColumn<int>(
@@ -1574,8 +1883,75 @@ class $AttendanceTable extends Attendance
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, sessionId, status, note, markedAt];
+  late final GeneratedColumn<int> timestamp = GeneratedColumn<int>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+    'latitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+    'longitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    userId,
+    status,
+    note,
+    markedAt,
+    timestamp,
+    latitude,
+    longitude,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1601,6 +1977,14 @@ class $AttendanceTable extends Attendance
     } else if (isInserting) {
       context.missing(_sessionIdMeta);
     }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
     if (data.containsKey('note')) {
       context.handle(
         _noteMeta,
@@ -1614,6 +1998,42 @@ class $AttendanceTable extends Attendance
       );
     } else if (isInserting) {
       context.missing(_markedAtMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     return context;
   }
@@ -1632,6 +2052,10 @@ class $AttendanceTable extends Attendance
         DriftSqlType.string,
         data['${effectivePrefix}session_id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       status: $AttendanceTable.$converterstatus.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -1645,6 +2069,26 @@ class $AttendanceTable extends Attendance
       markedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}marked_at'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}timestamp'],
+      )!,
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      ),
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
       )!,
     );
   }
@@ -1661,21 +2105,34 @@ class $AttendanceTable extends Attendance
 class AttendanceData extends DataClass implements Insertable<AttendanceData> {
   final String id;
   final String sessionId;
+  final String userId;
   final AttendanceStatus status;
   final String? note;
   final int markedAt;
+  final int timestamp;
+  final double? latitude;
+  final double? longitude;
+  final int createdAt;
+  final int updatedAt;
   const AttendanceData({
     required this.id,
     required this.sessionId,
+    required this.userId,
     required this.status,
     this.note,
     required this.markedAt,
+    required this.timestamp,
+    this.latitude,
+    this.longitude,
+    required this.createdAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
+    map['user_id'] = Variable<String>(userId);
     {
       map['status'] = Variable<int>(
         $AttendanceTable.$converterstatus.toSql(status),
@@ -1685,6 +2142,15 @@ class AttendanceData extends DataClass implements Insertable<AttendanceData> {
       map['note'] = Variable<String>(note);
     }
     map['marked_at'] = Variable<int>(markedAt);
+    map['timestamp'] = Variable<int>(timestamp);
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -1692,9 +2158,19 @@ class AttendanceData extends DataClass implements Insertable<AttendanceData> {
     return AttendanceCompanion(
       id: Value(id),
       sessionId: Value(sessionId),
+      userId: Value(userId),
       status: Value(status),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       markedAt: Value(markedAt),
+      timestamp: Value(timestamp),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -1706,11 +2182,17 @@ class AttendanceData extends DataClass implements Insertable<AttendanceData> {
     return AttendanceData(
       id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
+      userId: serializer.fromJson<String>(json['userId']),
       status: $AttendanceTable.$converterstatus.fromJson(
         serializer.fromJson<int>(json['status']),
       ),
       note: serializer.fromJson<String?>(json['note']),
       markedAt: serializer.fromJson<int>(json['markedAt']),
+      timestamp: serializer.fromJson<int>(json['timestamp']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -1719,34 +2201,58 @@ class AttendanceData extends DataClass implements Insertable<AttendanceData> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
+      'userId': serializer.toJson<String>(userId),
       'status': serializer.toJson<int>(
         $AttendanceTable.$converterstatus.toJson(status),
       ),
       'note': serializer.toJson<String?>(note),
       'markedAt': serializer.toJson<int>(markedAt),
+      'timestamp': serializer.toJson<int>(timestamp),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
   AttendanceData copyWith({
     String? id,
     String? sessionId,
+    String? userId,
     AttendanceStatus? status,
     Value<String?> note = const Value.absent(),
     int? markedAt,
+    int? timestamp,
+    Value<double?> latitude = const Value.absent(),
+    Value<double?> longitude = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
   }) => AttendanceData(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
+    userId: userId ?? this.userId,
     status: status ?? this.status,
     note: note.present ? note.value : this.note,
     markedAt: markedAt ?? this.markedAt,
+    timestamp: timestamp ?? this.timestamp,
+    latitude: latitude.present ? latitude.value : this.latitude,
+    longitude: longitude.present ? longitude.value : this.longitude,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   AttendanceData copyWithCompanion(AttendanceCompanion data) {
     return AttendanceData(
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       status: data.status.present ? data.status.value : this.status,
       note: data.note.present ? data.note.value : this.note,
       markedAt: data.markedAt.present ? data.markedAt.value : this.markedAt,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1755,66 +2261,124 @@ class AttendanceData extends DataClass implements Insertable<AttendanceData> {
     return (StringBuffer('AttendanceData(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
+          ..write('userId: $userId, ')
           ..write('status: $status, ')
           ..write('note: $note, ')
-          ..write('markedAt: $markedAt')
+          ..write('markedAt: $markedAt, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, status, note, markedAt);
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    userId,
+    status,
+    note,
+    markedAt,
+    timestamp,
+    latitude,
+    longitude,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AttendanceData &&
           other.id == this.id &&
           other.sessionId == this.sessionId &&
+          other.userId == this.userId &&
           other.status == this.status &&
           other.note == this.note &&
-          other.markedAt == this.markedAt);
+          other.markedAt == this.markedAt &&
+          other.timestamp == this.timestamp &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class AttendanceCompanion extends UpdateCompanion<AttendanceData> {
   final Value<String> id;
   final Value<String> sessionId;
+  final Value<String> userId;
   final Value<AttendanceStatus> status;
   final Value<String?> note;
   final Value<int> markedAt;
+  final Value<int> timestamp;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const AttendanceCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.status = const Value.absent(),
     this.note = const Value.absent(),
     this.markedAt = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AttendanceCompanion.insert({
     required String id,
     required String sessionId,
+    required String userId,
     required AttendanceStatus status,
     this.note = const Value.absent(),
     required int markedAt,
+    required int timestamp,
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
+       userId = Value(userId),
        status = Value(status),
-       markedAt = Value(markedAt);
+       markedAt = Value(markedAt),
+       timestamp = Value(timestamp),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<AttendanceData> custom({
     Expression<String>? id,
     Expression<String>? sessionId,
+    Expression<String>? userId,
     Expression<int>? status,
     Expression<String>? note,
     Expression<int>? markedAt,
+    Expression<int>? timestamp,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
+      if (userId != null) 'user_id': userId,
       if (status != null) 'status': status,
       if (note != null) 'note': note,
       if (markedAt != null) 'marked_at': markedAt,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1822,17 +2386,29 @@ class AttendanceCompanion extends UpdateCompanion<AttendanceData> {
   AttendanceCompanion copyWith({
     Value<String>? id,
     Value<String>? sessionId,
+    Value<String>? userId,
     Value<AttendanceStatus>? status,
     Value<String?>? note,
     Value<int>? markedAt,
+    Value<int>? timestamp,
+    Value<double?>? latitude,
+    Value<double?>? longitude,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return AttendanceCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
+      userId: userId ?? this.userId,
       status: status ?? this.status,
       note: note ?? this.note,
       markedAt: markedAt ?? this.markedAt,
+      timestamp: timestamp ?? this.timestamp,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1846,6 +2422,9 @@ class AttendanceCompanion extends UpdateCompanion<AttendanceData> {
     if (sessionId.present) {
       map['session_id'] = Variable<String>(sessionId.value);
     }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
     if (status.present) {
       map['status'] = Variable<int>(
         $AttendanceTable.$converterstatus.toSql(status.value),
@@ -1856,6 +2435,21 @@ class AttendanceCompanion extends UpdateCompanion<AttendanceData> {
     }
     if (markedAt.present) {
       map['marked_at'] = Variable<int>(markedAt.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<int>(timestamp.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -1868,9 +2462,15 @@ class AttendanceCompanion extends UpdateCompanion<AttendanceData> {
     return (StringBuffer('AttendanceCompanion(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
+          ..write('userId: $userId, ')
           ..write('status: $status, ')
           ..write('note: $note, ')
           ..write('markedAt: $markedAt, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1920,6 +2520,95 @@ class $RemindersTable extends Reminders
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ReminderType, int> type =
+      GeneratedColumn<int>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<ReminderType>($RemindersTable.$convertertype);
+  static const VerificationMeta _scheduledTimeMeta = const VerificationMeta(
+    'scheduledTime',
+  );
+  @override
+  late final GeneratedColumn<int> scheduledTime = GeneratedColumn<int>(
+    'scheduled_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<RepeatType, int> repeatType =
+      GeneratedColumn<int>(
+        'repeat_type',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<RepeatType>($RemindersTable.$converterrepeatType);
+  static const VerificationMeta _repeatIntervalMeta = const VerificationMeta(
+    'repeatInterval',
+  );
+  @override
+  late final GeneratedColumn<int> repeatInterval = GeneratedColumn<int>(
+    'repeat_interval',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _notificationIdMeta = const VerificationMeta(
+    'notificationId',
+  );
+  @override
+  late final GeneratedColumn<int> notificationId = GeneratedColumn<int>(
+    'notification_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metadataMeta = const VerificationMeta(
+    'metadata',
+  );
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+    'metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _morningOfClassMeta = const VerificationMeta(
     'morningOfClass',
@@ -2012,6 +2701,14 @@ class $RemindersTable extends Reminders
     userId,
     courseId,
     title,
+    description,
+    type,
+    scheduledTime,
+    repeatType,
+    repeatInterval,
+    isActive,
+    notificationId,
+    metadata,
     morningOfClass,
     minutesBefore,
     thresholdAlerts,
@@ -2058,6 +2755,56 @@ class $RemindersTable extends Reminders
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scheduled_time')) {
+      context.handle(
+        _scheduledTimeMeta,
+        scheduledTime.isAcceptableOrUnknown(
+          data['scheduled_time']!,
+          _scheduledTimeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledTimeMeta);
+    }
+    if (data.containsKey('repeat_interval')) {
+      context.handle(
+        _repeatIntervalMeta,
+        repeatInterval.isAcceptableOrUnknown(
+          data['repeat_interval']!,
+          _repeatIntervalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('notification_id')) {
+      context.handle(
+        _notificationIdMeta,
+        notificationId.isAcceptableOrUnknown(
+          data['notification_id']!,
+          _notificationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(
+        _metadataMeta,
+        metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
     }
     if (data.containsKey('morning_of_class')) {
       context.handle(
@@ -2145,6 +2892,42 @@ class $RemindersTable extends Reminders
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      type: $RemindersTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
+      scheduledTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scheduled_time'],
+      )!,
+      repeatType: $RemindersTable.$converterrepeatType.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}repeat_type'],
+        )!,
+      ),
+      repeatInterval: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}repeat_interval'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      notificationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}notification_id'],
+      ),
+      metadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata'],
+      ),
       morningOfClass: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}morning_of_class'],
@@ -2180,6 +2963,11 @@ class $RemindersTable extends Reminders
   $RemindersTable createAlias(String alias) {
     return $RemindersTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<ReminderType, int, int> $convertertype =
+      const EnumIndexConverter<ReminderType>(ReminderType.values);
+  static JsonTypeConverter2<RepeatType, int, int> $converterrepeatType =
+      const EnumIndexConverter<RepeatType>(RepeatType.values);
 }
 
 class Reminder extends DataClass implements Insertable<Reminder> {
@@ -2187,6 +2975,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   final String userId;
   final String? courseId;
   final String title;
+  final String? description;
+  final ReminderType type;
+  final int scheduledTime;
+  final RepeatType repeatType;
+  final int repeatInterval;
+  final bool isActive;
+  final int? notificationId;
+  final String? metadata;
   final bool morningOfClass;
   final int minutesBefore;
   final bool thresholdAlerts;
@@ -2199,6 +2995,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     required this.userId,
     this.courseId,
     required this.title,
+    this.description,
+    required this.type,
+    required this.scheduledTime,
+    required this.repeatType,
+    required this.repeatInterval,
+    required this.isActive,
+    this.notificationId,
+    this.metadata,
     required this.morningOfClass,
     required this.minutesBefore,
     required this.thresholdAlerts,
@@ -2216,6 +3020,26 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       map['course_id'] = Variable<String>(courseId);
     }
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    {
+      map['type'] = Variable<int>($RemindersTable.$convertertype.toSql(type));
+    }
+    map['scheduled_time'] = Variable<int>(scheduledTime);
+    {
+      map['repeat_type'] = Variable<int>(
+        $RemindersTable.$converterrepeatType.toSql(repeatType),
+      );
+    }
+    map['repeat_interval'] = Variable<int>(repeatInterval);
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || notificationId != null) {
+      map['notification_id'] = Variable<int>(notificationId);
+    }
+    if (!nullToAbsent || metadata != null) {
+      map['metadata'] = Variable<String>(metadata);
+    }
     map['morning_of_class'] = Variable<bool>(morningOfClass);
     map['minutes_before'] = Variable<int>(minutesBefore);
     map['threshold_alerts'] = Variable<bool>(thresholdAlerts);
@@ -2236,6 +3060,20 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           ? const Value.absent()
           : Value(courseId),
       title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      type: Value(type),
+      scheduledTime: Value(scheduledTime),
+      repeatType: Value(repeatType),
+      repeatInterval: Value(repeatInterval),
+      isActive: Value(isActive),
+      notificationId: notificationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notificationId),
+      metadata: metadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadata),
       morningOfClass: Value(morningOfClass),
       minutesBefore: Value(minutesBefore),
       thresholdAlerts: Value(thresholdAlerts),
@@ -2256,6 +3094,18 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       userId: serializer.fromJson<String>(json['userId']),
       courseId: serializer.fromJson<String?>(json['courseId']),
       title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      type: $RemindersTable.$convertertype.fromJson(
+        serializer.fromJson<int>(json['type']),
+      ),
+      scheduledTime: serializer.fromJson<int>(json['scheduledTime']),
+      repeatType: $RemindersTable.$converterrepeatType.fromJson(
+        serializer.fromJson<int>(json['repeatType']),
+      ),
+      repeatInterval: serializer.fromJson<int>(json['repeatInterval']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      notificationId: serializer.fromJson<int?>(json['notificationId']),
+      metadata: serializer.fromJson<String?>(json['metadata']),
       morningOfClass: serializer.fromJson<bool>(json['morningOfClass']),
       minutesBefore: serializer.fromJson<int>(json['minutesBefore']),
       thresholdAlerts: serializer.fromJson<bool>(json['thresholdAlerts']),
@@ -2273,6 +3123,18 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       'userId': serializer.toJson<String>(userId),
       'courseId': serializer.toJson<String?>(courseId),
       'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'type': serializer.toJson<int>(
+        $RemindersTable.$convertertype.toJson(type),
+      ),
+      'scheduledTime': serializer.toJson<int>(scheduledTime),
+      'repeatType': serializer.toJson<int>(
+        $RemindersTable.$converterrepeatType.toJson(repeatType),
+      ),
+      'repeatInterval': serializer.toJson<int>(repeatInterval),
+      'isActive': serializer.toJson<bool>(isActive),
+      'notificationId': serializer.toJson<int?>(notificationId),
+      'metadata': serializer.toJson<String?>(metadata),
       'morningOfClass': serializer.toJson<bool>(morningOfClass),
       'minutesBefore': serializer.toJson<int>(minutesBefore),
       'thresholdAlerts': serializer.toJson<bool>(thresholdAlerts),
@@ -2288,6 +3150,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     String? userId,
     Value<String?> courseId = const Value.absent(),
     String? title,
+    Value<String?> description = const Value.absent(),
+    ReminderType? type,
+    int? scheduledTime,
+    RepeatType? repeatType,
+    int? repeatInterval,
+    bool? isActive,
+    Value<int?> notificationId = const Value.absent(),
+    Value<String?> metadata = const Value.absent(),
     bool? morningOfClass,
     int? minutesBefore,
     bool? thresholdAlerts,
@@ -2300,6 +3170,16 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     userId: userId ?? this.userId,
     courseId: courseId.present ? courseId.value : this.courseId,
     title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    type: type ?? this.type,
+    scheduledTime: scheduledTime ?? this.scheduledTime,
+    repeatType: repeatType ?? this.repeatType,
+    repeatInterval: repeatInterval ?? this.repeatInterval,
+    isActive: isActive ?? this.isActive,
+    notificationId: notificationId.present
+        ? notificationId.value
+        : this.notificationId,
+    metadata: metadata.present ? metadata.value : this.metadata,
     morningOfClass: morningOfClass ?? this.morningOfClass,
     minutesBefore: minutesBefore ?? this.minutesBefore,
     thresholdAlerts: thresholdAlerts ?? this.thresholdAlerts,
@@ -2314,6 +3194,24 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       userId: data.userId.present ? data.userId.value : this.userId,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
       title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      type: data.type.present ? data.type.value : this.type,
+      scheduledTime: data.scheduledTime.present
+          ? data.scheduledTime.value
+          : this.scheduledTime,
+      repeatType: data.repeatType.present
+          ? data.repeatType.value
+          : this.repeatType,
+      repeatInterval: data.repeatInterval.present
+          ? data.repeatInterval.value
+          : this.repeatInterval,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      notificationId: data.notificationId.present
+          ? data.notificationId.value
+          : this.notificationId,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
       morningOfClass: data.morningOfClass.present
           ? data.morningOfClass.value
           : this.morningOfClass,
@@ -2337,6 +3235,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           ..write('userId: $userId, ')
           ..write('courseId: $courseId, ')
           ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('type: $type, ')
+          ..write('scheduledTime: $scheduledTime, ')
+          ..write('repeatType: $repeatType, ')
+          ..write('repeatInterval: $repeatInterval, ')
+          ..write('isActive: $isActive, ')
+          ..write('notificationId: $notificationId, ')
+          ..write('metadata: $metadata, ')
           ..write('morningOfClass: $morningOfClass, ')
           ..write('minutesBefore: $minutesBefore, ')
           ..write('thresholdAlerts: $thresholdAlerts, ')
@@ -2354,6 +3260,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     userId,
     courseId,
     title,
+    description,
+    type,
+    scheduledTime,
+    repeatType,
+    repeatInterval,
+    isActive,
+    notificationId,
+    metadata,
     morningOfClass,
     minutesBefore,
     thresholdAlerts,
@@ -2370,6 +3284,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           other.userId == this.userId &&
           other.courseId == this.courseId &&
           other.title == this.title &&
+          other.description == this.description &&
+          other.type == this.type &&
+          other.scheduledTime == this.scheduledTime &&
+          other.repeatType == this.repeatType &&
+          other.repeatInterval == this.repeatInterval &&
+          other.isActive == this.isActive &&
+          other.notificationId == this.notificationId &&
+          other.metadata == this.metadata &&
           other.morningOfClass == this.morningOfClass &&
           other.minutesBefore == this.minutesBefore &&
           other.thresholdAlerts == this.thresholdAlerts &&
@@ -2384,6 +3306,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
   final Value<String> userId;
   final Value<String?> courseId;
   final Value<String> title;
+  final Value<String?> description;
+  final Value<ReminderType> type;
+  final Value<int> scheduledTime;
+  final Value<RepeatType> repeatType;
+  final Value<int> repeatInterval;
+  final Value<bool> isActive;
+  final Value<int?> notificationId;
+  final Value<String?> metadata;
   final Value<bool> morningOfClass;
   final Value<int> minutesBefore;
   final Value<bool> thresholdAlerts;
@@ -2397,6 +3327,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
     this.userId = const Value.absent(),
     this.courseId = const Value.absent(),
     this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.type = const Value.absent(),
+    this.scheduledTime = const Value.absent(),
+    this.repeatType = const Value.absent(),
+    this.repeatInterval = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.notificationId = const Value.absent(),
+    this.metadata = const Value.absent(),
     this.morningOfClass = const Value.absent(),
     this.minutesBefore = const Value.absent(),
     this.thresholdAlerts = const Value.absent(),
@@ -2411,6 +3349,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
     required String userId,
     this.courseId = const Value.absent(),
     required String title,
+    this.description = const Value.absent(),
+    required ReminderType type,
+    required int scheduledTime,
+    required RepeatType repeatType,
+    this.repeatInterval = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.notificationId = const Value.absent(),
+    this.metadata = const Value.absent(),
     required bool morningOfClass,
     required int minutesBefore,
     required bool thresholdAlerts,
@@ -2422,6 +3368,9 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
   }) : id = Value(id),
        userId = Value(userId),
        title = Value(title),
+       type = Value(type),
+       scheduledTime = Value(scheduledTime),
+       repeatType = Value(repeatType),
        morningOfClass = Value(morningOfClass),
        minutesBefore = Value(minutesBefore),
        thresholdAlerts = Value(thresholdAlerts),
@@ -2432,6 +3381,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
     Expression<String>? userId,
     Expression<String>? courseId,
     Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? type,
+    Expression<int>? scheduledTime,
+    Expression<int>? repeatType,
+    Expression<int>? repeatInterval,
+    Expression<bool>? isActive,
+    Expression<int>? notificationId,
+    Expression<String>? metadata,
     Expression<bool>? morningOfClass,
     Expression<int>? minutesBefore,
     Expression<bool>? thresholdAlerts,
@@ -2446,6 +3403,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
       if (userId != null) 'user_id': userId,
       if (courseId != null) 'course_id': courseId,
       if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (type != null) 'type': type,
+      if (scheduledTime != null) 'scheduled_time': scheduledTime,
+      if (repeatType != null) 'repeat_type': repeatType,
+      if (repeatInterval != null) 'repeat_interval': repeatInterval,
+      if (isActive != null) 'is_active': isActive,
+      if (notificationId != null) 'notification_id': notificationId,
+      if (metadata != null) 'metadata': metadata,
       if (morningOfClass != null) 'morning_of_class': morningOfClass,
       if (minutesBefore != null) 'minutes_before': minutesBefore,
       if (thresholdAlerts != null) 'threshold_alerts': thresholdAlerts,
@@ -2462,6 +3427,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
     Value<String>? userId,
     Value<String?>? courseId,
     Value<String>? title,
+    Value<String?>? description,
+    Value<ReminderType>? type,
+    Value<int>? scheduledTime,
+    Value<RepeatType>? repeatType,
+    Value<int>? repeatInterval,
+    Value<bool>? isActive,
+    Value<int?>? notificationId,
+    Value<String?>? metadata,
     Value<bool>? morningOfClass,
     Value<int>? minutesBefore,
     Value<bool>? thresholdAlerts,
@@ -2476,6 +3449,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
       userId: userId ?? this.userId,
       courseId: courseId ?? this.courseId,
       title: title ?? this.title,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+      repeatType: repeatType ?? this.repeatType,
+      repeatInterval: repeatInterval ?? this.repeatInterval,
+      isActive: isActive ?? this.isActive,
+      notificationId: notificationId ?? this.notificationId,
+      metadata: metadata ?? this.metadata,
       morningOfClass: morningOfClass ?? this.morningOfClass,
       minutesBefore: minutesBefore ?? this.minutesBefore,
       thresholdAlerts: thresholdAlerts ?? this.thresholdAlerts,
@@ -2501,6 +3482,34 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<int>(
+        $RemindersTable.$convertertype.toSql(type.value),
+      );
+    }
+    if (scheduledTime.present) {
+      map['scheduled_time'] = Variable<int>(scheduledTime.value);
+    }
+    if (repeatType.present) {
+      map['repeat_type'] = Variable<int>(
+        $RemindersTable.$converterrepeatType.toSql(repeatType.value),
+      );
+    }
+    if (repeatInterval.present) {
+      map['repeat_interval'] = Variable<int>(repeatInterval.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (notificationId.present) {
+      map['notification_id'] = Variable<int>(notificationId.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
     }
     if (morningOfClass.present) {
       map['morning_of_class'] = Variable<bool>(morningOfClass.value);
@@ -2536,6 +3545,14 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
           ..write('userId: $userId, ')
           ..write('courseId: $courseId, ')
           ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('type: $type, ')
+          ..write('scheduledTime: $scheduledTime, ')
+          ..write('repeatType: $repeatType, ')
+          ..write('repeatInterval: $repeatInterval, ')
+          ..write('isActive: $isActive, ')
+          ..write('notificationId: $notificationId, ')
+          ..write('metadata: $metadata, ')
           ..write('morningOfClass: $morningOfClass, ')
           ..write('minutesBefore: $minutesBefore, ')
           ..write('thresholdAlerts: $thresholdAlerts, ')
@@ -3152,6 +4169,487 @@ class SyncQueueCompanion extends UpdateCompanion<SyncQueueData> {
   }
 }
 
+class $NotificationActionsTable extends NotificationActions
+    with TableInfo<$NotificationActionsTable, NotificationAction> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotificationActionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reminderIdMeta = const VerificationMeta(
+    'reminderId',
+  );
+  @override
+  late final GeneratedColumn<String> reminderId = GeneratedColumn<String>(
+    'reminder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<NotificationActionType, int>
+  actionType =
+      GeneratedColumn<int>(
+        'action_type',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<NotificationActionType>(
+        $NotificationActionsTable.$converteractionType,
+      );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<int> timestamp = GeneratedColumn<int>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metadataMeta = const VerificationMeta(
+    'metadata',
+  );
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+    'metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    reminderId,
+    actionType,
+    timestamp,
+    sessionId,
+    metadata,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notification_actions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotificationAction> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('reminder_id')) {
+      context.handle(
+        _reminderIdMeta,
+        reminderId.isAcceptableOrUnknown(data['reminder_id']!, _reminderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reminderIdMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(
+        _metadataMeta,
+        metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotificationAction map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotificationAction(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      reminderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reminder_id'],
+      )!,
+      actionType: $NotificationActionsTable.$converteractionType.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}action_type'],
+        )!,
+      ),
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}timestamp'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      ),
+      metadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NotificationActionsTable createAlias(String alias) {
+    return $NotificationActionsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<NotificationActionType, int, int>
+  $converteractionType = const EnumIndexConverter<NotificationActionType>(
+    NotificationActionType.values,
+  );
+}
+
+class NotificationAction extends DataClass
+    implements Insertable<NotificationAction> {
+  final String id;
+  final String reminderId;
+  final NotificationActionType actionType;
+  final int timestamp;
+  final String? sessionId;
+  final String? metadata;
+  final int createdAt;
+  const NotificationAction({
+    required this.id,
+    required this.reminderId,
+    required this.actionType,
+    required this.timestamp,
+    this.sessionId,
+    this.metadata,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['reminder_id'] = Variable<String>(reminderId);
+    {
+      map['action_type'] = Variable<int>(
+        $NotificationActionsTable.$converteractionType.toSql(actionType),
+      );
+    }
+    map['timestamp'] = Variable<int>(timestamp);
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<String>(sessionId);
+    }
+    if (!nullToAbsent || metadata != null) {
+      map['metadata'] = Variable<String>(metadata);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  NotificationActionsCompanion toCompanion(bool nullToAbsent) {
+    return NotificationActionsCompanion(
+      id: Value(id),
+      reminderId: Value(reminderId),
+      actionType: Value(actionType),
+      timestamp: Value(timestamp),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      metadata: metadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadata),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NotificationAction.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotificationAction(
+      id: serializer.fromJson<String>(json['id']),
+      reminderId: serializer.fromJson<String>(json['reminderId']),
+      actionType: $NotificationActionsTable.$converteractionType.fromJson(
+        serializer.fromJson<int>(json['actionType']),
+      ),
+      timestamp: serializer.fromJson<int>(json['timestamp']),
+      sessionId: serializer.fromJson<String?>(json['sessionId']),
+      metadata: serializer.fromJson<String?>(json['metadata']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'reminderId': serializer.toJson<String>(reminderId),
+      'actionType': serializer.toJson<int>(
+        $NotificationActionsTable.$converteractionType.toJson(actionType),
+      ),
+      'timestamp': serializer.toJson<int>(timestamp),
+      'sessionId': serializer.toJson<String?>(sessionId),
+      'metadata': serializer.toJson<String?>(metadata),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  NotificationAction copyWith({
+    String? id,
+    String? reminderId,
+    NotificationActionType? actionType,
+    int? timestamp,
+    Value<String?> sessionId = const Value.absent(),
+    Value<String?> metadata = const Value.absent(),
+    int? createdAt,
+  }) => NotificationAction(
+    id: id ?? this.id,
+    reminderId: reminderId ?? this.reminderId,
+    actionType: actionType ?? this.actionType,
+    timestamp: timestamp ?? this.timestamp,
+    sessionId: sessionId.present ? sessionId.value : this.sessionId,
+    metadata: metadata.present ? metadata.value : this.metadata,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  NotificationAction copyWithCompanion(NotificationActionsCompanion data) {
+    return NotificationAction(
+      id: data.id.present ? data.id.value : this.id,
+      reminderId: data.reminderId.present
+          ? data.reminderId.value
+          : this.reminderId,
+      actionType: data.actionType.present
+          ? data.actionType.value
+          : this.actionType,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationAction(')
+          ..write('id: $id, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('actionType: $actionType, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('metadata: $metadata, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    reminderId,
+    actionType,
+    timestamp,
+    sessionId,
+    metadata,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotificationAction &&
+          other.id == this.id &&
+          other.reminderId == this.reminderId &&
+          other.actionType == this.actionType &&
+          other.timestamp == this.timestamp &&
+          other.sessionId == this.sessionId &&
+          other.metadata == this.metadata &&
+          other.createdAt == this.createdAt);
+}
+
+class NotificationActionsCompanion extends UpdateCompanion<NotificationAction> {
+  final Value<String> id;
+  final Value<String> reminderId;
+  final Value<NotificationActionType> actionType;
+  final Value<int> timestamp;
+  final Value<String?> sessionId;
+  final Value<String?> metadata;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const NotificationActionsCompanion({
+    this.id = const Value.absent(),
+    this.reminderId = const Value.absent(),
+    this.actionType = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.metadata = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotificationActionsCompanion.insert({
+    required String id,
+    required String reminderId,
+    required NotificationActionType actionType,
+    required int timestamp,
+    this.sessionId = const Value.absent(),
+    this.metadata = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       reminderId = Value(reminderId),
+       actionType = Value(actionType),
+       timestamp = Value(timestamp),
+       createdAt = Value(createdAt);
+  static Insertable<NotificationAction> custom({
+    Expression<String>? id,
+    Expression<String>? reminderId,
+    Expression<int>? actionType,
+    Expression<int>? timestamp,
+    Expression<String>? sessionId,
+    Expression<String>? metadata,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (reminderId != null) 'reminder_id': reminderId,
+      if (actionType != null) 'action_type': actionType,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (sessionId != null) 'session_id': sessionId,
+      if (metadata != null) 'metadata': metadata,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotificationActionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? reminderId,
+    Value<NotificationActionType>? actionType,
+    Value<int>? timestamp,
+    Value<String?>? sessionId,
+    Value<String?>? metadata,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return NotificationActionsCompanion(
+      id: id ?? this.id,
+      reminderId: reminderId ?? this.reminderId,
+      actionType: actionType ?? this.actionType,
+      timestamp: timestamp ?? this.timestamp,
+      sessionId: sessionId ?? this.sessionId,
+      metadata: metadata ?? this.metadata,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (reminderId.present) {
+      map['reminder_id'] = Variable<String>(reminderId.value);
+    }
+    if (actionType.present) {
+      map['action_type'] = Variable<int>(
+        $NotificationActionsTable.$converteractionType.toSql(actionType.value),
+      );
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<int>(timestamp.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationActionsCompanion(')
+          ..write('id: $id, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('actionType: $actionType, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('metadata: $metadata, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3162,6 +4660,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RemindersTable reminders = $RemindersTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
+  late final $NotificationActionsTable notificationActions =
+      $NotificationActionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3174,6 +4674,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     reminders,
     settings,
     syncQueue,
+    notificationActions,
   ];
 }
 
@@ -4035,9 +5536,15 @@ typedef $$SessionsTableCreateCompanionBuilder =
       required String id,
       required String courseId,
       required int startUtc,
+      Value<int?> endUtc,
       required int durationMin,
       required String source,
       Value<String?> generatedFromMeetingId,
+      Value<String?> note,
+      Value<bool> wasCancelled,
+      Value<String?> cancellationReason,
+      required int createdAt,
+      required int updatedAt,
       Value<int> rowid,
     });
 typedef $$SessionsTableUpdateCompanionBuilder =
@@ -4045,9 +5552,15 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> courseId,
       Value<int> startUtc,
+      Value<int?> endUtc,
       Value<int> durationMin,
       Value<String> source,
       Value<String?> generatedFromMeetingId,
+      Value<String?> note,
+      Value<bool> wasCancelled,
+      Value<String?> cancellationReason,
+      Value<int> createdAt,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -4110,6 +5623,11 @@ class $$SessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get endUtc => $composableBuilder(
+    column: $table.endUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get durationMin => $composableBuilder(
     column: $table.durationMin,
     builder: (column) => ColumnFilters(column),
@@ -4122,6 +5640,31 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get generatedFromMeetingId => $composableBuilder(
     column: $table.generatedFromMeetingId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get wasCancelled => $composableBuilder(
+    column: $table.wasCancelled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cancellationReason => $composableBuilder(
+    column: $table.cancellationReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4193,6 +5736,11 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get endUtc => $composableBuilder(
+    column: $table.endUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get durationMin => $composableBuilder(
     column: $table.durationMin,
     builder: (column) => ColumnOrderings(column),
@@ -4205,6 +5753,31 @@ class $$SessionsTableOrderingComposer
 
   ColumnOrderings<String> get generatedFromMeetingId => $composableBuilder(
     column: $table.generatedFromMeetingId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get wasCancelled => $composableBuilder(
+    column: $table.wasCancelled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cancellationReason => $composableBuilder(
+    column: $table.cancellationReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4247,6 +5820,9 @@ class $$SessionsTableAnnotationComposer
   GeneratedColumn<int> get startUtc =>
       $composableBuilder(column: $table.startUtc, builder: (column) => column);
 
+  GeneratedColumn<int> get endUtc =>
+      $composableBuilder(column: $table.endUtc, builder: (column) => column);
+
   GeneratedColumn<int> get durationMin => $composableBuilder(
     column: $table.durationMin,
     builder: (column) => column,
@@ -4259,6 +5835,25 @@ class $$SessionsTableAnnotationComposer
     column: $table.generatedFromMeetingId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<bool> get wasCancelled => $composableBuilder(
+    column: $table.wasCancelled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cancellationReason => $composableBuilder(
+    column: $table.cancellationReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$CoursesTableAnnotationComposer get courseId {
     final $$CoursesTableAnnotationComposer composer = $composerBuilder(
@@ -4340,17 +5935,29 @@ class $$SessionsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> courseId = const Value.absent(),
                 Value<int> startUtc = const Value.absent(),
+                Value<int?> endUtc = const Value.absent(),
                 Value<int> durationMin = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<String?> generatedFromMeetingId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> wasCancelled = const Value.absent(),
+                Value<String?> cancellationReason = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsCompanion(
                 id: id,
                 courseId: courseId,
                 startUtc: startUtc,
+                endUtc: endUtc,
                 durationMin: durationMin,
                 source: source,
                 generatedFromMeetingId: generatedFromMeetingId,
+                note: note,
+                wasCancelled: wasCancelled,
+                cancellationReason: cancellationReason,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4358,17 +5965,29 @@ class $$SessionsTableTableManager
                 required String id,
                 required String courseId,
                 required int startUtc,
+                Value<int?> endUtc = const Value.absent(),
                 required int durationMin,
                 required String source,
                 Value<String?> generatedFromMeetingId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> wasCancelled = const Value.absent(),
+                Value<String?> cancellationReason = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => SessionsCompanion.insert(
                 id: id,
                 courseId: courseId,
                 startUtc: startUtc,
+                endUtc: endUtc,
                 durationMin: durationMin,
                 source: source,
                 generatedFromMeetingId: generatedFromMeetingId,
+                note: note,
+                wasCancelled: wasCancelled,
+                cancellationReason: cancellationReason,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4461,18 +6080,30 @@ typedef $$AttendanceTableCreateCompanionBuilder =
     AttendanceCompanion Function({
       required String id,
       required String sessionId,
+      required String userId,
       required AttendanceStatus status,
       Value<String?> note,
       required int markedAt,
+      required int timestamp,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      required int createdAt,
+      required int updatedAt,
       Value<int> rowid,
     });
 typedef $$AttendanceTableUpdateCompanionBuilder =
     AttendanceCompanion Function({
       Value<String> id,
       Value<String> sessionId,
+      Value<String> userId,
       Value<AttendanceStatus> status,
       Value<String?> note,
       Value<int> markedAt,
+      Value<int> timestamp,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      Value<int> createdAt,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -4514,6 +6145,11 @@ class $$AttendanceTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnWithTypeConverterFilters<AttendanceStatus, AttendanceStatus, int>
   get status => $composableBuilder(
     column: $table.status,
@@ -4527,6 +6163,31 @@ class $$AttendanceTableFilterComposer
 
   ColumnFilters<int> get markedAt => $composableBuilder(
     column: $table.markedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4568,6 +6229,11 @@ class $$AttendanceTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -4580,6 +6246,31 @@ class $$AttendanceTableOrderingComposer
 
   ColumnOrderings<int> get markedAt => $composableBuilder(
     column: $table.markedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4619,6 +6310,9 @@ class $$AttendanceTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<AttendanceStatus, int> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
@@ -4627,6 +6321,21 @@ class $$AttendanceTableAnnotationComposer
 
   GeneratedColumn<int> get markedAt =>
       $composableBuilder(column: $table.markedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$SessionsTableAnnotationComposer get sessionId {
     final $$SessionsTableAnnotationComposer composer = $composerBuilder(
@@ -4682,32 +6391,56 @@ class $$AttendanceTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<AttendanceStatus> status = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int> markedAt = const Value.absent(),
+                Value<int> timestamp = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttendanceCompanion(
                 id: id,
                 sessionId: sessionId,
+                userId: userId,
                 status: status,
                 note: note,
                 markedAt: markedAt,
+                timestamp: timestamp,
+                latitude: latitude,
+                longitude: longitude,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
                 required String sessionId,
+                required String userId,
                 required AttendanceStatus status,
                 Value<String?> note = const Value.absent(),
                 required int markedAt,
+                required int timestamp,
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => AttendanceCompanion.insert(
                 id: id,
                 sessionId: sessionId,
+                userId: userId,
                 status: status,
                 note: note,
                 markedAt: markedAt,
+                timestamp: timestamp,
+                latitude: latitude,
+                longitude: longitude,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4783,6 +6516,14 @@ typedef $$RemindersTableCreateCompanionBuilder =
       required String userId,
       Value<String?> courseId,
       required String title,
+      Value<String?> description,
+      required ReminderType type,
+      required int scheduledTime,
+      required RepeatType repeatType,
+      Value<int> repeatInterval,
+      Value<bool> isActive,
+      Value<int?> notificationId,
+      Value<String?> metadata,
       required bool morningOfClass,
       required int minutesBefore,
       required bool thresholdAlerts,
@@ -4798,6 +6539,14 @@ typedef $$RemindersTableUpdateCompanionBuilder =
       Value<String> userId,
       Value<String?> courseId,
       Value<String> title,
+      Value<String?> description,
+      Value<ReminderType> type,
+      Value<int> scheduledTime,
+      Value<RepeatType> repeatType,
+      Value<int> repeatInterval,
+      Value<bool> isActive,
+      Value<int?> notificationId,
+      Value<String?> metadata,
       Value<bool> morningOfClass,
       Value<int> minutesBefore,
       Value<bool> thresholdAlerts,
@@ -4834,6 +6583,48 @@ class $$RemindersTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ReminderType, ReminderType, int> get type =>
+      $composableBuilder(
+        column: $table.type,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<RepeatType, RepeatType, int> get repeatType =>
+      $composableBuilder(
+        column: $table.repeatType,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get repeatInterval => $composableBuilder(
+    column: $table.repeatInterval,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+    column: $table.metadata,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4902,6 +6693,46 @@ class $$RemindersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get repeatType => $composableBuilder(
+    column: $table.repeatType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get repeatInterval => $composableBuilder(
+    column: $table.repeatInterval,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get morningOfClass => $composableBuilder(
     column: $table.morningOfClass,
     builder: (column) => ColumnOrderings(column),
@@ -4958,6 +6789,41 @@ class $$RemindersTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<ReminderType, int> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<RepeatType, int> get repeatType =>
+      $composableBuilder(
+        column: $table.repeatType,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<int> get repeatInterval => $composableBuilder(
+    column: $table.repeatInterval,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
 
   GeneratedColumn<bool> get morningOfClass => $composableBuilder(
     column: $table.morningOfClass,
@@ -5019,6 +6885,14 @@ class $$RemindersTableTableManager
                 Value<String> userId = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<ReminderType> type = const Value.absent(),
+                Value<int> scheduledTime = const Value.absent(),
+                Value<RepeatType> repeatType = const Value.absent(),
+                Value<int> repeatInterval = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int?> notificationId = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 Value<bool> morningOfClass = const Value.absent(),
                 Value<int> minutesBefore = const Value.absent(),
                 Value<bool> thresholdAlerts = const Value.absent(),
@@ -5032,6 +6906,14 @@ class $$RemindersTableTableManager
                 userId: userId,
                 courseId: courseId,
                 title: title,
+                description: description,
+                type: type,
+                scheduledTime: scheduledTime,
+                repeatType: repeatType,
+                repeatInterval: repeatInterval,
+                isActive: isActive,
+                notificationId: notificationId,
+                metadata: metadata,
                 morningOfClass: morningOfClass,
                 minutesBefore: minutesBefore,
                 thresholdAlerts: thresholdAlerts,
@@ -5047,6 +6929,14 @@ class $$RemindersTableTableManager
                 required String userId,
                 Value<String?> courseId = const Value.absent(),
                 required String title,
+                Value<String?> description = const Value.absent(),
+                required ReminderType type,
+                required int scheduledTime,
+                required RepeatType repeatType,
+                Value<int> repeatInterval = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int?> notificationId = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 required bool morningOfClass,
                 required int minutesBefore,
                 required bool thresholdAlerts,
@@ -5060,6 +6950,14 @@ class $$RemindersTableTableManager
                 userId: userId,
                 courseId: courseId,
                 title: title,
+                description: description,
+                type: type,
+                scheduledTime: scheduledTime,
+                repeatType: repeatType,
+                repeatInterval: repeatInterval,
+                isActive: isActive,
+                notificationId: notificationId,
+                metadata: metadata,
                 morningOfClass: morningOfClass,
                 minutesBefore: minutesBefore,
                 thresholdAlerts: thresholdAlerts,
@@ -5439,6 +7337,270 @@ typedef $$SyncQueueTableProcessedTableManager =
       SyncQueueData,
       PrefetchHooks Function()
     >;
+typedef $$NotificationActionsTableCreateCompanionBuilder =
+    NotificationActionsCompanion Function({
+      required String id,
+      required String reminderId,
+      required NotificationActionType actionType,
+      required int timestamp,
+      Value<String?> sessionId,
+      Value<String?> metadata,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$NotificationActionsTableUpdateCompanionBuilder =
+    NotificationActionsCompanion Function({
+      Value<String> id,
+      Value<String> reminderId,
+      Value<NotificationActionType> actionType,
+      Value<int> timestamp,
+      Value<String?> sessionId,
+      Value<String?> metadata,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$NotificationActionsTableFilterComposer
+    extends Composer<_$AppDatabase, $NotificationActionsTable> {
+  $$NotificationActionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    NotificationActionType,
+    NotificationActionType,
+    int
+  >
+  get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotificationActionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotificationActionsTable> {
+  $$NotificationActionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotificationActionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotificationActionsTable> {
+  $$NotificationActionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<NotificationActionType, int>
+  get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$NotificationActionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotificationActionsTable,
+          NotificationAction,
+          $$NotificationActionsTableFilterComposer,
+          $$NotificationActionsTableOrderingComposer,
+          $$NotificationActionsTableAnnotationComposer,
+          $$NotificationActionsTableCreateCompanionBuilder,
+          $$NotificationActionsTableUpdateCompanionBuilder,
+          (
+            NotificationAction,
+            BaseReferences<
+              _$AppDatabase,
+              $NotificationActionsTable,
+              NotificationAction
+            >,
+          ),
+          NotificationAction,
+          PrefetchHooks Function()
+        > {
+  $$NotificationActionsTableTableManager(
+    _$AppDatabase db,
+    $NotificationActionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotificationActionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotificationActionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$NotificationActionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> reminderId = const Value.absent(),
+                Value<NotificationActionType> actionType = const Value.absent(),
+                Value<int> timestamp = const Value.absent(),
+                Value<String?> sessionId = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationActionsCompanion(
+                id: id,
+                reminderId: reminderId,
+                actionType: actionType,
+                timestamp: timestamp,
+                sessionId: sessionId,
+                metadata: metadata,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String reminderId,
+                required NotificationActionType actionType,
+                required int timestamp,
+                Value<String?> sessionId = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationActionsCompanion.insert(
+                id: id,
+                reminderId: reminderId,
+                actionType: actionType,
+                timestamp: timestamp,
+                sessionId: sessionId,
+                metadata: metadata,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotificationActionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotificationActionsTable,
+      NotificationAction,
+      $$NotificationActionsTableFilterComposer,
+      $$NotificationActionsTableOrderingComposer,
+      $$NotificationActionsTableAnnotationComposer,
+      $$NotificationActionsTableCreateCompanionBuilder,
+      $$NotificationActionsTableUpdateCompanionBuilder,
+      (
+        NotificationAction,
+        BaseReferences<
+          _$AppDatabase,
+          $NotificationActionsTable,
+          NotificationAction
+        >,
+      ),
+      NotificationAction,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5457,4 +7619,6 @@ class $AppDatabaseManager {
       $$SettingsTableTableManager(_db, _db.settings);
   $$SyncQueueTableTableManager get syncQueue =>
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
+  $$NotificationActionsTableTableManager get notificationActions =>
+      $$NotificationActionsTableTableManager(_db, _db.notificationActions);
 }

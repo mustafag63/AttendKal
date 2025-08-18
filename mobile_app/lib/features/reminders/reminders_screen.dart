@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/reminder_providers.dart';
 import '../../data/local/db.dart';
 import 'widgets/reminder_card.dart';

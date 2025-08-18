@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing.dart';
-import 'core/env.dart';
 
 class AttendkalApp extends ConsumerWidget {
   const AttendkalApp({super.key});

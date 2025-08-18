@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/progress_providers.dart';
@@ -295,7 +297,7 @@ class ProgressScreen extends ConsumerWidget {
   }
 
   Widget _buildWeeklyTrendSection(WidgetRef ref) {
-    final weeklyTrend = ref.watch(weeklyTrendProvider(8));
+    final weeklyTrend = ref.watch(weeklyTrendProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,7 +369,7 @@ class ProgressScreen extends ConsumerWidget {
   }
 
   Widget _buildDailyHeatmapSection(WidgetRef ref) {
-    final dailyHeatmap = ref.watch(dailyHeatmapProvider(30));
+    final dailyHeatmap = ref.watch(dailyHeatmapProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

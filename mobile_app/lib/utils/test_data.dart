@@ -1,6 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../data/local/db.dart';
 import '../providers/courses_providers.dart';
 
@@ -49,9 +52,11 @@ final testDataProvider = FutureProvider<void>((ref) async {
         id: 'session_1',
         courseId: courseId1,
         startUtc: session1Time.millisecondsSinceEpoch,
-        endUtc: session1Time
-            .add(const Duration(hours: 2))
-            .millisecondsSinceEpoch,
+        endUtc: Value(
+          session1Time.add(const Duration(hours: 2)).millisecondsSinceEpoch,
+        ),
+        durationMin: 120,
+        source: 'test',
         note: const Value('Haftalık ders'),
         createdAt: DateTime.now().millisecondsSinceEpoch,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -65,9 +70,11 @@ final testDataProvider = FutureProvider<void>((ref) async {
         id: 'session_2',
         courseId: courseId2,
         startUtc: session2Time.millisecondsSinceEpoch,
-        endUtc: session2Time
-            .add(const Duration(hours: 3))
-            .millisecondsSinceEpoch,
+        endUtc: Value(
+          session2Time.add(const Duration(hours: 3)).millisecondsSinceEpoch,
+        ),
+        durationMin: 180,
+        source: 'test',
         note: const Value('Lab çalışması'),
         createdAt: DateTime.now().millisecondsSinceEpoch,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -81,9 +88,13 @@ final testDataProvider = FutureProvider<void>((ref) async {
         id: 'session_3',
         courseId: courseId1,
         startUtc: session3Time.millisecondsSinceEpoch,
-        endUtc: session3Time
-            .add(const Duration(hours: 1, minutes: 30))
-            .millisecondsSinceEpoch,
+        endUtc: Value(
+          session3Time
+              .add(const Duration(hours: 1, minutes: 30))
+              .millisecondsSinceEpoch,
+        ),
+        durationMin: 90,
+        source: 'test',
         note: const Value('Ek ders'),
         createdAt: DateTime.now().millisecondsSinceEpoch,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -130,9 +141,11 @@ Future<void> _addHistoricalData(
             id: sessionId,
             courseId: courseId1,
             startUtc: sessionStart.millisecondsSinceEpoch,
-            endUtc: sessionStart
-                .add(const Duration(hours: 2))
-                .millisecondsSinceEpoch,
+            endUtc: Value(
+              sessionStart.add(const Duration(hours: 2)).millisecondsSinceEpoch,
+            ),
+            durationMin: 120,
+            source: 'historical',
             createdAt: DateTime.now().millisecondsSinceEpoch,
             updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
@@ -162,10 +175,12 @@ Future<void> _addHistoricalData(
 
         await db.insertAttendance(
           AttendanceCompanion.insert(
+            id: const Uuid().v4(),
             sessionId: sessionId,
             userId: 'test_user',
             status: status,
             timestamp: sessionStart.millisecondsSinceEpoch,
+            markedAt: sessionStart.millisecondsSinceEpoch,
             createdAt: DateTime.now().millisecondsSinceEpoch,
             updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
@@ -187,9 +202,11 @@ Future<void> _addHistoricalData(
             id: sessionId,
             courseId: courseId2,
             startUtc: sessionStart.millisecondsSinceEpoch,
-            endUtc: sessionStart
-                .add(const Duration(hours: 3))
-                .millisecondsSinceEpoch,
+            endUtc: Value(
+              sessionStart.add(const Duration(hours: 3)).millisecondsSinceEpoch,
+            ),
+            durationMin: 180,
+            source: 'historical',
             createdAt: DateTime.now().millisecondsSinceEpoch,
             updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
@@ -214,10 +231,12 @@ Future<void> _addHistoricalData(
 
         await db.insertAttendance(
           AttendanceCompanion.insert(
+            id: const Uuid().v4(),
             sessionId: sessionId,
             userId: 'test_user',
             status: status,
             timestamp: sessionStart.millisecondsSinceEpoch,
+            markedAt: sessionStart.millisecondsSinceEpoch,
             createdAt: DateTime.now().millisecondsSinceEpoch,
             updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),

@@ -28,7 +28,7 @@ export const markAttendance = asyncHandler(
                         maxAbsences: true,
                     },
                 },
-                attendance: true,
+                attendanceRecords: true,
             },
         });
 
@@ -47,11 +47,11 @@ export const markAttendance = asyncHandler(
             create: {
                 userId,
                 sessionId,
-                status,
+                status: status as any,
                 note: note,
             },
             update: {
-                status,
+                status: status as any,
                 note: note,
                 updatedAt: new Date(),
             },
@@ -73,7 +73,7 @@ export const markAttendance = asyncHandler(
         // Calculate current absence statistics
         const absentCount = await prisma.attendance.count({
             where: {
-                session: { courseId: session.course.id },
+                session: { courseId: session.courseId },
                 status: 'ABSENT',
             },
         });
@@ -119,7 +119,7 @@ export const getAttendance = asyncHandler(
                         maxAbsences: true,
                     },
                 },
-                attendance: true,
+                attendanceRecords: true,
             },
         });
 
@@ -131,7 +131,7 @@ export const getAttendance = asyncHandler(
             success: true,
             data: {
                 session,
-                attendance: session.attendance,
+                attendance: session.attendanceRecords,
             },
         });
     }

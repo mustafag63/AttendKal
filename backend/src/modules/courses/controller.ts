@@ -9,6 +9,17 @@ import {
     CreateSessionInput
 } from '@src/lib/courseValidations';
 
+// Helper function to calculate end time
+const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+    return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+};
+
 // Course Controllers
 export const getCourses = asyncHandler(
     async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -24,9 +35,9 @@ export const getCourses = asyncHandler(
                 meetings: true,
                 sessions: {
                     include: {
-                        attendance: true,
+                        attendanceRecords: true,
                     },
-                    orderBy: { startUtc: 'desc' },
+                    orderBy: { startTime: 'desc' },
                     take: 5, // Latest 5 sessions per course
                 },
                 _count: {
@@ -57,7 +68,7 @@ export const getCourses = asyncHandler(
                         absentCount,
                         remainingAbsences,
                         lastStrike,
-                        totalSessions: course._count.sessions,
+                        totalSessions: course.sessions?.length || 0,
                     },
                 };
             })
@@ -87,9 +98,9 @@ export const getCourse = asyncHandler(
                 },
                 sessions: {
                     include: {
-                        attendance: true,
+                        attendanceRecords: true,
                     },
-                    orderBy: { startUtc: 'desc' },
+                    orderBy: { startTime: 'desc' },
                 },
                 _count: {
                     select: {
@@ -123,7 +134,7 @@ export const getCourse = asyncHandler(
                         absentCount,
                         remainingAbsences,
                         lastStrike,
-                        totalSessions: course._count.sessions,
+                        totalSessions: course.sessions?.length || 0,
                     },
                 },
             },
@@ -254,8 +265,13 @@ export const createMeeting = asyncHandler(
 
         const meeting = await prisma.meeting.create({
             data: {
-                ...meetingData,
                 courseId,
+                weekday: meetingData.weekday,
+                startTime: meetingData.startHHmm || '09:00',
+                endTime: calculateEndTime(meetingData.startHHmm || '09:00', meetingData.durationMin || 90),
+                durationMinutes: meetingData.durationMin || 90,
+                location: meetingData.location,
+                note: meetingData.note,
             },
         });
 

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, unnecessary_brace_in_string_interps
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
@@ -104,18 +106,27 @@ class CourseNotifier extends StateNotifier<AsyncValue<List<Course>>> {
       await _db.insertCourse(course);
 
       // Add to sync queue for backend sync
-      await _db.addToSyncQueue('insert', 'courses', courseId, {
-        'id': courseId,
-        'name': name,
-        'code': code,
-        'teacher': teacher,
-        'location': location,
-        'color': color.value,
-        'note': note,
-        'maxAbsences': maxAbsences,
-        'createdAt': now,
-        'updatedAt': now,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'courses',
+          entityId: courseId,
+          op: 'insert',
+          payloadJson:
+              '{'
+              '"id": "$courseId",'
+              '"name": "$name",'
+              '"code": "$code",'
+              '"teacher": ${teacher != null ? '"$teacher"' : 'null'},'
+              '"location": ${location != null ? '"$location"' : 'null'},'
+              '"color": ${color},'
+              '"note": ${note != null ? '"$note"' : 'null'},'
+              '"maxAbsences": $maxAbsences,'
+              '"createdAt": $now,'
+              '"updatedAt": $now'
+              '}',
+          createdAt: now,
+        ),
+      );
 
       // Invalidate providers to refresh UI
       _ref.invalidate(coursesProvider);
@@ -146,32 +157,47 @@ class CourseNotifier extends StateNotifier<AsyncValue<List<Course>>> {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      final course = CoursesCompanion(
-        id: Value(courseId),
-        name: Value(name),
-        code: Value(code),
-        teacher: teacher != null ? Value(teacher) : const Value.absent(),
-        location: location != null ? Value(location) : const Value.absent(),
-        color: Value(color),
-        note: note != null ? Value(note) : const Value.absent(),
-        maxAbsences: Value(maxAbsences),
-        updatedAt: Value(now),
+      // Önce mevcut course'u al
+      final existingCourse = await _db.getCourseById(courseId);
+      if (existingCourse == null) return;
+
+      // Yeni Course nesnesi oluştur
+      final updatedCourse = Course(
+        id: courseId,
+        name: name,
+        code: code,
+        teacher: teacher,
+        location: location,
+        color: color,
+        note: note,
+        maxAbsences: maxAbsences,
+        createdAt: existingCourse.createdAt,
+        updatedAt: now,
       );
 
-      await _db.updateCourse(course);
+      await _db.updateCourse(updatedCourse);
 
       // Add to sync queue
-      await _db.addToSyncQueue('update', 'courses', courseId, {
-        'id': courseId,
-        'name': name,
-        'code': code,
-        'teacher': teacher,
-        'location': location,
-        'color': color.value,
-        'note': note,
-        'maxAbsences': maxAbsences,
-        'updatedAt': now,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'courses',
+          entityId: courseId,
+          op: 'update',
+          payloadJson:
+              '{'
+              '"id": "$courseId",'
+              '"name": "$name",'
+              '"code": "$code",'
+              '"teacher": ${teacher != null ? '"$teacher"' : 'null'},'
+              '"location": ${location != null ? '"$location"' : 'null'},'
+              '"color": ${color.value},'
+              '"note": ${note != null ? '"$note"' : 'null'},'
+              '"maxAbsences": $maxAbsences,'
+              '"updatedAt": $now'
+              '}',
+          createdAt: now,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(coursesProvider);
@@ -189,7 +215,15 @@ class CourseNotifier extends StateNotifier<AsyncValue<List<Course>>> {
       await _db.deleteCourse(courseId);
 
       // Add to sync queue
-      await _db.addToSyncQueue('delete', 'courses', courseId, {'id': courseId});
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'courses',
+          entityId: courseId,
+          op: 'delete',
+          payloadJson: '{"id": "$courseId"}',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(coursesProvider);
@@ -257,15 +291,24 @@ class MeetingNotifier extends StateNotifier<AsyncValue<List<Meeting>>> {
       await _db.insertMeeting(meeting);
 
       // Add to sync queue
-      await _db.addToSyncQueue('insert', 'meetings', meetingId, {
-        'id': meetingId,
-        'courseId': courseId,
-        'weekday': weekday,
-        'startHHmm': startHHmm,
-        'durationMin': durationMin,
-        'location': location,
-        'note': note,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'meetings',
+          entityId: meetingId,
+          op: 'insert',
+          payloadJson:
+              '{'
+              '"id": "$meetingId",'
+              '"courseId": "$courseId",'
+              '"weekday": $weekday,'
+              '"startHHmm": "$startHHmm",'
+              '"durationMin": $durationMin,'
+              '"location": ${location != null ? '"$location"' : 'null'},'
+              '"note": ${note != null ? '"$note"' : 'null'}'
+              '}',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(courseMeetingsProvider(courseId));
@@ -281,9 +324,15 @@ class MeetingNotifier extends StateNotifier<AsyncValue<List<Meeting>>> {
       await _db.deleteMeeting(meetingId);
 
       // Add to sync queue
-      await _db.addToSyncQueue('delete', 'meetings', meetingId, {
-        'id': meetingId,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'meetings',
+          entityId: meetingId,
+          op: 'delete',
+          payloadJson: '{"id": "$meetingId"}',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(courseMeetingsProvider(courseId));

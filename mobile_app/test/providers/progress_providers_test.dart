@@ -32,10 +32,11 @@ void main() {
 
     test('should handle color operations', () {
       const color = Colors.blue;
-      final colorValue = color.value;
-      final reconstructed = Color(colorValue);
+      final colorValue = color;
+      // ignore: deprecated_member_use
+      final reconstructed = Color(colorValue.value);
 
-      expect(reconstructed.value, equals(color.value));
+      expect(reconstructed, equals(color));
     });
   });
 }

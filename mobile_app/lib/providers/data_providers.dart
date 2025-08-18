@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../data/local/db.dart';
 import '../providers/courses_providers.dart';
 
@@ -146,6 +147,7 @@ class DataService {
       'code': course.code,
       'teacher': course.teacher,
       'location': course.location,
+      // ignore: deprecated_member_use
       'color': course.color.value,
       'note': course.note,
       'maxAbsences': course.maxAbsences,
@@ -172,6 +174,9 @@ class DataService {
       'courseId': session.courseId,
       'startUtc': session.startUtc,
       'endUtc': session.endUtc,
+      'durationMin': session.durationMin,
+      'source': session.source,
+      'generatedFromMeetingId': session.generatedFromMeetingId,
       'note': session.note,
       'wasCancelled': session.wasCancelled,
       'cancellationReason': session.cancellationReason,
@@ -182,10 +187,12 @@ class DataService {
 
   Map<String, dynamic> _attendanceToJson(AttendanceData attendance) {
     return {
+      'id': attendance.id,
       'sessionId': attendance.sessionId,
       'userId': attendance.userId,
       'status': attendance.status.name,
       'timestamp': attendance.timestamp,
+      'markedAt': attendance.markedAt,
       'note': attendance.note,
       'latitude': attendance.latitude,
       'longitude': attendance.longitude,
@@ -197,6 +204,7 @@ class DataService {
   Map<String, dynamic> _reminderToJson(Reminder reminder) {
     return {
       'id': reminder.id,
+      'userId': reminder.userId,
       'title': reminder.title,
       'description': reminder.description,
       'type': reminder.type.name,
@@ -207,6 +215,11 @@ class DataService {
       'isActive': reminder.isActive,
       'notificationId': reminder.notificationId,
       'metadata': reminder.metadata,
+      'morningOfClass': reminder.morningOfClass,
+      'minutesBefore': reminder.minutesBefore,
+      'thresholdAlerts': reminder.thresholdAlerts,
+      'cron': reminder.cron,
+      'enabled': reminder.enabled,
       'createdAt': reminder.createdAt,
       'updatedAt': reminder.updatedAt,
     };
@@ -245,7 +258,10 @@ class DataService {
       id: json['id'],
       courseId: json['courseId'],
       startUtc: json['startUtc'],
-      endUtc: json['endUtc'],
+      durationMin: json['durationMin'] ?? 120, // Default 2 hours if missing
+      source: json['source'] ?? 'import', // Default source
+      endUtc: Value(json['endUtc']),
+      generatedFromMeetingId: Value(json['generatedFromMeetingId']),
       note: Value(json['note']),
       wasCancelled: Value(json['wasCancelled'] ?? false),
       cancellationReason: Value(json['cancellationReason']),
@@ -256,21 +272,27 @@ class DataService {
 
   AttendanceCompanion _attendanceFromJson(Map<String, dynamic> json) {
     return AttendanceCompanion.insert(
-      sessionId: json['sessionId'],
-      userId: json['userId'],
-      status: AttendanceStatus.values.byName(json['status']),
-      timestamp: json['timestamp'],
-      note: Value(json['note']),
-      latitude: Value(json['latitude']),
-      longitude: Value(json['longitude']),
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
+      id: json['id'] as String? ?? const Uuid().v4(),
+      sessionId: json['sessionId'] as String,
+      userId: json['userId'] as String,
+      status: AttendanceStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+      ),
+      timestamp: json['timestamp'] as int,
+      markedAt:
+          json['markedAt'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      note: Value(json['note'] as String?),
+      latitude: Value(json['latitude'] as double?),
+      longitude: Value(json['longitude'] as double?),
+      createdAt: json['createdAt'] as int,
+      updatedAt: json['updatedAt'] as int,
     );
   }
 
   RemindersCompanion _reminderFromJson(Map<String, dynamic> json) {
     return RemindersCompanion.insert(
       id: json['id'],
+      userId: json['userId'] as String? ?? '',
       title: json['title'],
       description: Value(json['description']),
       type: ReminderType.values.byName(json['type']),
@@ -281,6 +303,11 @@ class DataService {
       isActive: Value(json['isActive'] ?? true),
       notificationId: Value(json['notificationId']),
       metadata: Value(json['metadata']),
+      morningOfClass: json['morningOfClass'] as bool? ?? false,
+      minutesBefore: json['minutesBefore'] as int? ?? 15,
+      thresholdAlerts: json['thresholdAlerts'] as bool? ?? false,
+      cron: Value(json['cron']),
+      enabled: Value(json['enabled'] ?? true),
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
     );

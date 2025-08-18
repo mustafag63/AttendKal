@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../data/local/db.dart';
 import '../providers/courses_providers.dart';
 import '../providers/progress_providers.dart';
@@ -155,24 +156,32 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       final now = DateTime.now().millisecondsSinceEpoch;
 
       if (existingAttendance != null) {
-        // Güncelle
-        await _db.updateAttendance(
-          AttendanceCompanion(
-            sessionId: Value(sessionId),
-            status: Value(status),
-            timestamp: Value(now),
-            note: Value(note),
-            updatedAt: Value(now),
-          ),
+        // Güncelle - AttendanceData nesnesini yeniden oluştur
+        final updatedAttendance = AttendanceData(
+          id: existingAttendance.id,
+          sessionId: existingAttendance.sessionId,
+          userId: existingAttendance.userId,
+          status: status,
+          note: note,
+          markedAt: existingAttendance.markedAt,
+          timestamp: now,
+          latitude: existingAttendance.latitude,
+          longitude: existingAttendance.longitude,
+          createdAt: existingAttendance.createdAt,
+          updatedAt: now,
         );
+        await _db.updateAttendanceData(updatedAttendance);
       } else {
         // Yeni kayıt
+        final attendanceId = const Uuid().v4();
         await _db.insertAttendance(
           AttendanceCompanion.insert(
+            id: attendanceId,
             sessionId: sessionId,
             userId: 'current_user', // TODO: Actual user ID
             status: status,
             timestamp: now,
+            markedAt: now,
             note: Value(note),
             createdAt: now,
             updatedAt: now,
@@ -256,7 +265,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
           undoAction.sessionId,
         );
         if (attendance != null) {
-          await _db.deleteAttendance(attendance.sessionId);
+          await _db.deleteAttendance(attendance.id);
         }
       }
 

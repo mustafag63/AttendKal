@@ -18,7 +18,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Profil'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

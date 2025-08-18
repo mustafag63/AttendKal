@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import '../data/local/db.dart';
 import '../services/notification_service.dart';
 
@@ -20,24 +22,20 @@ final remindersByTimeRangeProvider =
       final db = ref.watch(reminderDatabaseProvider);
       final now = DateTime.now();
 
-      int startTime, endTime;
+      DateTime startTime, endTime;
 
       switch (timeRange.type) {
         case TimeRangeType.upcoming:
-          startTime = now.millisecondsSinceEpoch;
-          endTime = now.add(const Duration(hours: 48)).millisecondsSinceEpoch;
+          startTime = now;
+          endTime = now.add(const Duration(hours: 48));
           break;
         case TimeRangeType.future:
-          startTime = now.add(const Duration(hours: 48)).millisecondsSinceEpoch;
-          endTime = now
-              .add(const Duration(days: 365))
-              .millisecondsSinceEpoch; // Next year
+          startTime = now.add(const Duration(hours: 48));
+          endTime = now.add(const Duration(days: 365)); // Next year
           break;
         case TimeRangeType.past:
-          startTime = now
-              .subtract(const Duration(days: 365))
-              .millisecondsSinceEpoch; // Last year
-          endTime = now.millisecondsSinceEpoch;
+          startTime = now.subtract(const Duration(days: 365)); // Last year
+          endTime = now;
           break;
       }
 
@@ -94,6 +92,7 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
 
       final reminder = RemindersCompanion.insert(
         id: reminderId,
+        userId: 'current_user', // TODO: Get from auth service
         title: title,
         description: description != null
             ? Value(description)
@@ -103,7 +102,12 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
         scheduledTime: scheduledTime.millisecondsSinceEpoch,
         repeatType: repeatType,
         repeatInterval: Value(repeatInterval),
-        metadata: metadata != null ? Value(metadata) : const Value.absent(),
+        metadata: metadata != null
+            ? Value(json.encode(metadata))
+            : const Value.absent(),
+        morningOfClass: false, // Default value
+        minutesBefore: 0, // Default value
+        thresholdAlerts: false, // Default value
         createdAt: now,
         updatedAt: now,
       );
@@ -117,19 +121,27 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
       }
 
       // Add to sync queue
-      await _db.addToSyncQueue('insert', 'reminders', reminderId, {
-        'id': reminderId,
-        'title': title,
-        'description': description,
-        'type': type.name,
-        'courseId': courseId,
-        'scheduledTime': scheduledTime.millisecondsSinceEpoch,
-        'repeatType': repeatType.name,
-        'repeatInterval': repeatInterval,
-        'metadata': metadata,
-        'createdAt': now,
-        'updatedAt': now,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'reminders',
+          entityId: reminderId,
+          op: 'insert',
+          payloadJson: json.encode({
+            'id': reminderId,
+            'title': title,
+            'description': description,
+            'type': type.name,
+            'courseId': courseId,
+            'scheduledTime': scheduledTime.millisecondsSinceEpoch,
+            'repeatType': repeatType.name,
+            'repeatInterval': repeatInterval,
+            'metadata': metadata,
+            'createdAt': now,
+            'updatedAt': now,
+          }),
+          createdAt: now,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(activeRemindersProvider);
@@ -160,49 +172,65 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      final reminder = RemindersCompanion(
-        id: Value(reminderId),
-        title: Value(title),
-        description: description != null
-            ? Value(description)
-            : const Value.absent(),
-        type: Value(type),
-        courseId: courseId != null ? Value(courseId) : const Value.absent(),
-        scheduledTime: Value(scheduledTime.millisecondsSinceEpoch),
-        repeatType: Value(repeatType),
-        repeatInterval: Value(repeatInterval),
-        metadata: metadata != null ? Value(metadata) : const Value.absent(),
-        updatedAt: Value(now),
+      // Get existing reminder and create updated version
+      final existingReminder = await _getReminderById(reminderId);
+      if (existingReminder == null) return;
+
+      final updatedReminder = Reminder(
+        id: reminderId,
+        userId: existingReminder.userId,
+        title: title,
+        description: description,
+        type: type,
+        courseId: courseId,
+        scheduledTime: scheduledTime.millisecondsSinceEpoch,
+        repeatType: repeatType,
+        repeatInterval: repeatInterval,
+        isActive: existingReminder.isActive,
+        notificationId: existingReminder.notificationId,
+        metadata: metadata != null ? json.encode(metadata) : null,
+        morningOfClass: existingReminder.morningOfClass,
+        minutesBefore: existingReminder.minutesBefore,
+        thresholdAlerts: existingReminder.thresholdAlerts,
+        cron: existingReminder.cron,
+        enabled: existingReminder.enabled,
+        createdAt: existingReminder.createdAt,
+        updatedAt: now,
       );
 
-      await _db.updateReminder(reminder);
+      await _db.updateReminder(updatedReminder);
 
       // Reschedule notification
-      final updatedReminder = await _getReminderById(reminderId);
-      if (updatedReminder != null) {
-        // Cancel old notification if exists
-        if (updatedReminder.notificationId != null) {
-          await _notificationService.cancelNotification(
-            updatedReminder.notificationId!,
-          );
-        }
-        // Schedule new notification
-        await _notificationService.scheduleReminder(updatedReminder);
+      // Cancel old notification if exists
+      if (updatedReminder.notificationId != null) {
+        await _notificationService.cancelNotification(
+          updatedReminder.notificationId!,
+        );
       }
+      // Schedule new notification
+      await _notificationService.scheduleReminder(updatedReminder);
 
       // Add to sync queue
-      await _db.addToSyncQueue('update', 'reminders', reminderId, {
-        'id': reminderId,
-        'title': title,
-        'description': description,
-        'type': type.name,
-        'courseId': courseId,
-        'scheduledTime': scheduledTime.millisecondsSinceEpoch,
-        'repeatType': repeatType.name,
-        'repeatInterval': repeatInterval,
-        'metadata': metadata,
-        'updatedAt': now,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'reminders',
+          entityId: reminderId,
+          op: 'update',
+          payloadJson: json.encode({
+            'id': reminderId,
+            'title': title,
+            'description': description,
+            'type': type.name,
+            'courseId': courseId,
+            'scheduledTime': scheduledTime.millisecondsSinceEpoch,
+            'repeatType': repeatType.name,
+            'repeatInterval': repeatInterval,
+            'metadata': metadata,
+            'updatedAt': now,
+          }),
+          createdAt: now,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(activeRemindersProvider);
@@ -230,9 +258,15 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
       await _db.deleteReminder(reminderId);
 
       // Add to sync queue
-      await _db.addToSyncQueue('delete', 'reminders', reminderId, {
-        'id': reminderId,
-      });
+      await _db.addToSyncQueue(
+        SyncQueueCompanion.insert(
+          entity: 'reminders',
+          entityId: reminderId,
+          op: 'delete',
+          payloadJson: json.encode({'id': reminderId}),
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
 
       // Invalidate providers
       _ref.invalidate(activeRemindersProvider);
@@ -249,24 +283,42 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
 
   Future<void> toggleReminderActive(String reminderId, bool isActive) async {
     try {
-      final reminder = RemindersCompanion(
-        id: Value(reminderId),
-        isActive: Value(isActive),
-        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      // Get existing reminder first
+      final existingReminder = await _getReminderById(reminderId);
+      if (existingReminder == null) return;
+
+      // Create updated reminder
+      final updatedReminder = Reminder(
+        id: existingReminder.id,
+        userId: existingReminder.userId,
+        title: existingReminder.title,
+        description: existingReminder.description,
+        type: existingReminder.type,
+        courseId: existingReminder.courseId,
+        scheduledTime: existingReminder.scheduledTime,
+        repeatType: existingReminder.repeatType,
+        repeatInterval: existingReminder.repeatInterval,
+        isActive: isActive,
+        notificationId: existingReminder.notificationId,
+        metadata: existingReminder.metadata,
+        morningOfClass: existingReminder.morningOfClass,
+        minutesBefore: existingReminder.minutesBefore,
+        thresholdAlerts: existingReminder.thresholdAlerts,
+        cron: existingReminder.cron,
+        enabled: existingReminder.enabled,
+        createdAt: existingReminder.createdAt,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       );
 
-      await _db.updateReminder(reminder);
+      await _db.updateReminder(updatedReminder);
 
       // Handle notification scheduling
-      final updatedReminder = await _getReminderById(reminderId);
-      if (updatedReminder != null) {
-        if (isActive) {
-          await _notificationService.scheduleReminder(updatedReminder);
-        } else if (updatedReminder.notificationId != null) {
-          await _notificationService.cancelNotification(
-            updatedReminder.notificationId!,
-          );
-        }
+      if (isActive) {
+        await _notificationService.scheduleReminder(updatedReminder);
+      } else if (updatedReminder.notificationId != null) {
+        await _notificationService.cancelNotification(
+          updatedReminder.notificationId!,
+        );
       }
 
       // Invalidate providers
@@ -303,7 +355,7 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
       }
     } catch (error) {
       // Log error but don't fail
-      print('Error rescheduling course reminders: $error');
+      debugPrint('Error rescheduling course reminders: $error');
     }
   }
 }

@@ -10,138 +10,525 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
 model User {
-  id        String   @id @default(uuid())
-  username  String?  @unique
-  email     String   @unique
+  id           String    @id @default(uuid())
+  username     String?   @unique
+  email        String    @unique
   passwordHash String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Optional timestamps
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-
-  // Password reset
+  
+  // Core timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Authentication & Security
+  emailVerifiedAt       DateTime?
+  lastLoginAt           DateTime?
   resetPasswordToken    String?
   resetTokenExpiresAt   DateTime?
-
-  // Refresh token versioning for security
-  refreshTokenVersion Int @default(0)
-
+  refreshTokenVersion   Int       @default(0)
+  
   // User preferences
-  timezone  String? @default("UTC")
-  locale    String? @default("en")
-
-  // Consent tracking
-  marketingConsentAt DateTime?
-  termsAcceptedAt    DateTime?
-
+  timezone              String?   @default("UTC")
+  locale                String?   @default("en")
+  
+  // Consent & Legal
+  marketingConsentAt    DateTime?
+  termsAcceptedAt       DateTime?
+  
+  // Profile information
+  firstName             String?
+  lastName              String?
+  avatar                String?
+  phoneNumber           String?
+  
+  // Account status
+  isActive              Boolean   @default(true)
+  isEmailVerified       Boolean   @default(false)
+  
   // Relations
-  courses     Course[]
-  attendance  Attendance[]
-  reminders   Reminder[]
+  courses               Course[]
+  attendanceRecords     Attendance[]
+  reminders             Reminder[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  apiKeys               ApiKey[]
+  attendanceStats       AttendanceStats[]
 
+  @@index([email])
+  @@index([username])
+  @@index([isActive])
   @@map("users")
 }
 
+// ============================================
+// COURSE MANAGEMENT
+// ============================================
+
 model Course {
-  id           String   @id @default(uuid())
-  userId       String
-  name         String
-  code         String?
-  teacher      String?
-  location     String?
-  color        String?  @default("#3B82F6") // Default blue color
-  note         String?
-  maxAbsences  Int      // Required field for attendance tracking
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String    @id @default(uuid())
+  userId           String
+  
+  // Course details
+  name             String
+  code             String?
+  description      String?
+  teacher          String?
+  location         String?
+  color            String?   @default("#3B82F6")
+  note             String?
+  
+  // Attendance settings
+  maxAbsences      Int       @default(3)
+  warningThreshold Int?      @default(2)
+  
+  // Academic period
+  semester         String?
+  academicYear     String?
+  credits          Int?
+  
+  // Schedule metadata
+  startDate        DateTime?
+  endDate          DateTime?
+  
+  // Status
+  isActive         Boolean   @default(true)
+  isArchived       Boolean   @default(false)
+  
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  meetings  Meeting[]
-  sessions  Session[]
-  reminders Reminder[]
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetings         Meeting[]
+  sessions         Session[]
+  reminders        Reminder[]
+  attendanceStats  AttendanceStats[]
 
+  @@index([userId])
+  @@index([isActive])
+  @@index([academicYear, semester])
   @@map("courses")
 }
 
+// ============================================
+// SCHEDULE MANAGEMENT
+// ============================================
+
 model Meeting {
-  id          String  @id @default(uuid())
-  courseId    String
-  weekday     Int     // 1=Monday, 7=Sunday
-  startHHmm   String  // Format: "14:30"
-  durationMin Int     @default(90)
-  location    String?
-  note        String?
+  id               String   @id @default(uuid())
+  courseId         String
+  
+  // Schedule details
+  weekday          Int      // 1=Monday, 7=Sunday
+  startTime        String   // Format: "14:30" (HH:MM)
+  endTime          String   // Format: "16:00" (HH:MM)
+  durationMinutes  Int      @default(90)
+  
+  // Location & notes
+  location         String?
+  roomNumber       String?
+  building         String?
+  note             String?
+  
+  // Recurrence settings
+  isRecurring      Boolean  @default(true)
+  recurrenceRule   String?  // RRULE format for complex patterns
+  
+  // Status
+  isActive         Boolean  @default(true)
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  sessions Session[] @relation("GeneratedFromMeeting")
+  course           Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  generatedSessions Session[] @relation("GeneratedFromMeeting")
 
+  @@index([courseId])
+  @@index([weekday])
+  @@index([isActive])
   @@map("meetings")
 }
 
-// Sessions for courses
+// ============================================
+// SESSION & ATTENDANCE MANAGEMENT
+// ============================================
+
 model Session {
-  id        String   @id @default(uuid())
-  courseId  String
-  meetingId String?  // Optional relation to Meeting that generated this session
-  startUtc  DateTime // UTC timestamp for session start
-  durationMin Int    // Duration in minutes
-  source    String   @default("AUTO") // "AUTO" or "MANUAL"
-  generatedFromMeetingId String? // Reference to original meeting
+  id                    String    @id @default(uuid())
+  courseId              String
+  meetingId             String?   // Optional relation to Meeting that generated this session
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Session timing
+  startTime             DateTime  // Local session start time
+  endTime               DateTime  // Local session end time
+  durationMinutes       Int       @default(90)
+  timezone              String    @default("UTC")
+  
+  // Session metadata
+  title                 String?
+  description           String?
+  location              String?
+  roomNumber            String?
+  building              String?
+  
+  // Generation metadata
+  source                SessionSource @default(AUTO)
+  generatedFromMeetingId String?
+  
+  // Session status
+  status                SessionStatus @default(SCHEDULED)
+  isCancelled           Boolean       @default(false)
+  cancellationReason    String?
+  
+  // Attendance summary (computed fields)
+  totalStudents         Int           @default(0)
+  presentCount          Int           @default(0)
+  absentCount           Int           @default(0)
+  excusedCount          Int           @default(0)
+  
+  // Timestamps
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   // Relations
-  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  attendance   Attendance[]
-  fromMeeting  Meeting?     @relation("GeneratedFromMeeting", fields: [meetingId], references: [id])
+  course                Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  fromMeeting           Meeting?      @relation("GeneratedFromMeeting", fields: [meetingId], references: [id])
+  attendanceRecords     Attendance[]
 
-  @@index([courseId, startUtc])
+  @@index([courseId, startTime])
+  @@index([status])
+  @@index([startTime])
   @@map("sessions")
 }
 
+enum SessionSource {
+  AUTO     // Generated from meeting
+  MANUAL   // Manually created
+  IMPORT   // Imported from external source
+}
+
+enum SessionStatus {
+  SCHEDULED   // Future session
+  ONGOING     // Current session
+  COMPLETED   // Past session
+  CANCELLED   // Cancelled session
+}
+
 model Attendance {
-  id        String   @id @default(uuid())
-  userId    String
-  sessionId String   @unique // Each session can have only one attendance record per user
-  status    String   @default("PRESENT") // "PRESENT", "ABSENT", "EXCUSED"
-  note      String?
-  markedAt  DateTime @default(now())
+  id              String           @id @default(uuid())
+  userId          String
+  sessionId       String
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Attendance details
+  status          AttendanceStatus @default(PRESENT)
+  checkInTime     DateTime?
+  checkOutTime    DateTime?
+  note            String?
+  
+  // Geolocation (optional)
+  latitude        Float?
+  longitude       Float?
+  accuracy        Float?
+  
+  // Metadata
+  markedBy        String?          // userId of who marked attendance (for admin marking)
+  isLate          Boolean          @default(false)
+  minutesLate     Int?
+  
+  // System tracking
+  ipAddress       String?
+  userAgent       String?
+  
+  // Timestamps
+  markedAt        DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session         Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, sessionId])
   @@index([status])
+  @@index([sessionId])
+  @@index([markedAt])
   @@map("attendance")
 }
 
-model Reminder {
-  id              String   @id @default(uuid())
-  userId          String
-  courseId        String?  // nullable for general reminders
-  title           String
-  morningOfClass  Boolean  @default(true)
-  minutesBefore   Int      @default(60)
-  thresholdAlerts Boolean  @default(true)
-  cron            String?  // for custom scheduling
-  enabled         Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+enum AttendanceStatus {
+  PRESENT   // Student was present
+  ABSENT    // Student was absent
+  EXCUSED   // Excused absence
+  LATE      // Present but late
+  PARTIAL   // Partially present
+}
+
+// ============================================
+// STATISTICS & ANALYTICS
+// ============================================
+
+model AttendanceStats {
+  id                String   @id @default(uuid())
+  userId            String
+  courseId          String
+  
+  // Period info
+  period            String   // "weekly", "monthly", "semester"
+  startDate         DateTime
+  endDate           DateTime
+  
+  // Statistics
+  totalSessions     Int      @default(0)
+  presentCount      Int      @default(0)
+  absentCount       Int      @default(0)
+  excusedCount      Int      @default(0)
+  lateCount         Int      @default(0)
+  attendanceRate    Float    @default(0.0)
+  
+  // Timestamps
+  calculatedAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, courseId, period, startDate])
+  @@index([userId, courseId])
+  @@index([period])
+  @@map("attendance_stats")
+}
+
+// ============================================
+// REMINDERS & NOTIFICATIONS
+// ============================================
+
+model Reminder {
+  id                String         @id @default(uuid())
+  userId            String
+  courseId          String?        // nullable for general reminders
+  
+  // Reminder details
+  title             String
+  description       String?
+  type              ReminderType   @default(CLASS_REMINDER)
+  
+  // Timing settings
+  triggerTime       DateTime?      // Specific time to trigger
+  minutesBefore     Int?           @default(60)
+  morningOfClass    Boolean        @default(true)
+  
+  // Recurrence
+  isRecurring       Boolean        @default(false)
+  recurrenceRule    String?        // RRULE format
+  
+  // Alert settings
+  thresholdAlerts   Boolean        @default(true)
+  emailAlert        Boolean        @default(true)
+  pushAlert         Boolean        @default(true)
+  smsAlert          Boolean        @default(false)
+  
+  // Custom scheduling
+  cronExpression    String?        // for complex scheduling
+  timezone          String?        @default("UTC")
+  
+  // Status
+  isEnabled         Boolean        @default(true)
+  isActive          Boolean        @default(true)
+  
+  // Tracking
+  lastTriggered     DateTime?
+  nextTrigger       DateTime?
+  triggerCount      Int            @default(0)
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course?        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  notifications     Notification[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([isEnabled, isActive])
+  @@index([nextTrigger])
   @@map("reminders")
 }
+
+enum ReminderType {
+  CLASS_REMINDER      // Before class starts
+  ASSIGNMENT_DUE      // Assignment deadline
+  EXAM_REMINDER       // Exam notification
+  ATTENDANCE_WARNING  // Low attendance warning
+  CUSTOM              // Custom reminder
+}
+
+model Notification {
+  id            String             @id @default(uuid())
+  userId        String
+  reminderId    String?
+  
+  // Notification details
+  title         String
+  message       String
+  type          NotificationType   @default(INFO)
+  category      String?
+  
+  // Delivery
+  channel       NotificationChannel @default(PUSH)
+  isRead        Boolean            @default(false)
+  readAt        DateTime?
+  
+  // Metadata
+  data          Json?              // Additional data payload
+  priority      NotificationPriority @default(NORMAL)
+  
+  // Delivery tracking
+  deliveredAt   DateTime?
+  failedAt      DateTime?
+  retryCount    Int                @default(0)
+  errorMessage  String?
+  
+  // Timestamps
+  scheduledFor  DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  // Relations
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminder      Reminder?          @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([scheduledFor])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  REMINDER
+}
+
+enum NotificationChannel {
+  PUSH      // Mobile push notification
+  EMAIL     // Email notification
+  SMS       // SMS notification
+  IN_APP    // In-app notification
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ============================================
+// AUDIT & SYSTEM
+// ============================================
+
+model AuditLog {
+  id            String         @id @default(uuid())
+  userId        String?        // nullable for system actions
+  
+  // Action details
+  action        String         // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entityType    String         // User, Course, Session, etc.
+  entityId      String?        // ID of the affected entity
+  
+  // Change tracking
+  oldValues     Json?          // Previous values
+  newValues     Json?          // New values
+  changedFields String[]       // List of changed field names
+  
+  // Request metadata
+  ipAddress     String?
+  userAgent     String?
+  endpoint      String?        // API endpoint
+  method        String?        // HTTP method
+  
+  // Context
+  reason        String?        // Reason for change
+  metadata      Json?          // Additional context
+  
+  // Result
+  success       Boolean        @default(true)
+  errorMessage  String?
+  
+  // Timestamps
+  timestamp     DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+
+  // Relations
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model SystemConfig {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  value         String
+  description   String?
+  category      String?  @default("general")
+  dataType      String   @default("string") // string, number, boolean, json
+  isSecret      Boolean  @default(false)
+  isEditable    Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@map("system_config")
+}
+
+model ApiKey {
+  id            String   @id @default(uuid())
+  name          String
+  keyHash       String   @unique
+  userId        String?  // nullable for system keys
+  
+  // Permissions
+  scopes        String[] // List of allowed scopes/permissions
+  isActive      Boolean  @default(true)
+  
+  // Usage tracking
+  lastUsedAt    DateTime?
+  usageCount    Int      @default(0)
+  
+  // Limits
+  rateLimit     Int?     // Requests per minute
+  expiresAt     DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([userId])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+// Add the missing relation to User model
+// This needs to be added to the User model above

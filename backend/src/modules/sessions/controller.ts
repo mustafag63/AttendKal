@@ -26,9 +26,9 @@ export const getSessions = asyncHandler(
         }
 
         if (from || to) {
-            whereClause.startUtc = {};
-            if (from) whereClause.startUtc.gte = new Date(from);
-            if (to) whereClause.startUtc.lte = new Date(to);
+            whereClause.startTime = {};
+            if (from) whereClause.startTime.gte = new Date(from);
+            if (to) whereClause.startTime.lte = new Date(to);
         }
 
         const sessions = await prisma.session.findMany({
