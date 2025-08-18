@@ -10,6 +10,7 @@ import { courseRoutes } from '@src/modules/courses';
 import { sessionRoutes } from '@src/modules/sessions';
 import { attendanceRoutes } from '@src/modules/attendance';
 import { reminderRoutes } from '@src/modules/reminders';
+import { userRoutes } from '@src/modules/users';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/api', (req, res) => {
     res.json({

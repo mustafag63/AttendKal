@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import '../data/local/db.dart';
+import '../data/remote/attendance_api_service.dart';
+import '../providers/auth_providers.dart';
 import '../providers/courses_providers.dart';
 import '../providers/progress_providers.dart';
 
@@ -105,8 +108,9 @@ final conflictingSessionsProvider =
 class AttendanceNotifier extends StateNotifier<AttendanceState> {
   final AppDatabase _db;
   final Ref _ref;
+  final AttendanceApiService _apiService;
 
-  AttendanceNotifier(this._db, this._ref)
+  AttendanceNotifier(this._db, this._ref, this._apiService)
     : super(const AttendanceInitialState());
 
   Future<void> markAttendance({
@@ -187,6 +191,19 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
             updatedAt: now,
           ),
         );
+      }
+
+      // Backend'e senkronize et
+      try {
+        await _apiService.markAttendance(
+          sessionId: sessionId,
+          status: status,
+          note: note,
+        );
+      } catch (e) {
+        // Backend hatası varsa log et ama yerel işlemi engelleme
+        debugPrint('Backend sync failed: $e');
+        // TODO: Add to sync queue for later retry
       }
 
       // Undo action'ı kaydet
@@ -288,10 +305,17 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 }
 
+// API Service provider
+final attendanceApiServiceProvider = Provider<AttendanceApiService>((ref) {
+  final dioClient = ref.watch(dioClientProvider);
+  return AttendanceApiService(dioClient);
+});
+
 final attendanceNotifierProvider =
     StateNotifierProvider<AttendanceNotifier, AttendanceState>((ref) {
       final db = ref.watch(databaseProvider);
-      return AttendanceNotifier(db, ref);
+      final apiService = ref.watch(attendanceApiServiceProvider);
+      return AttendanceNotifier(db, ref, apiService);
     });
 
 // Data classes

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "325809177173",
+    "project_id": "attendkal-467c4",
+    "storage_bucket": "attendkal-467c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325809177173:android:1f465eb707df29f8b18adc",
+        "android_client_info": {
+          "package_name": "com.android.application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2CT3su-1pvduHVNvVTyEWcPI_cllEDXA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

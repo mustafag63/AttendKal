@@ -60,7 +60,7 @@ class NotificationService {
           DarwinNotificationAction.plain('missed', 'Kaçırdım'),
           DarwinNotificationAction.plain('snooze10', '10dk Snooze'),
           DarwinNotificationAction.plain('snooze30', '30dk Snooze'),
-          DarwinNotificationAction.plain('snooze2h', '2s Snooze'),
+          DarwinNotificationAction.plain('snooze2h', '2 Saat Snooze'),
         ],
         options: <DarwinNotificationCategoryOption>{
           DarwinNotificationCategoryOption.customDismissAction,
@@ -230,10 +230,7 @@ class NotificationService {
 
   /// Arka planda çalışacak günlük/yarım günlük iş planlayıcısı
   Future<void> initializeBackgroundWork() async {
-    await Workmanager().initialize(
-      notificationBackgroundTaskDispatcher,
-      isInDebugMode: kDebugMode,
-    );
+    await Workmanager().initialize(notificationBackgroundTaskDispatcher);
 
     // Günde iki kez planı tazele
     await Workmanager().registerPeriodicTask(
@@ -241,13 +238,12 @@ class NotificationService {
       'scheduleNotifications',
       frequency: const Duration(hours: 12),
       constraints: Constraints(
-        networkType: NetworkType.not_required,
+        networkType: NetworkType.notRequired,
         requiresBatteryNotLow: false,
         requiresCharging: false,
         requiresDeviceIdle: false,
         requiresStorageNotLow: false,
       ),
-      existingWorkPolicy: ExistingWorkPolicy.replace,
       backoffPolicy: BackoffPolicy.linear,
     );
   }
@@ -313,6 +309,11 @@ class NotificationService {
     }
   }
 
+  /// Public method to handle notification responses (can be called from main.dart)
+  Future<void> handleNotificationResponse(NotificationResponse response) async {
+    await _onNotificationResponse(response);
+  }
+
   Future<void> _handleNotificationAction(
     String reminderId,
     String actionType,
@@ -363,13 +364,30 @@ class NotificationService {
       await _scheduleSnoozeNotification(reminderId, action, payload);
     }
 
-    // Katılım/Kaçırma (ileride yoklama sistemiyle bağlanacak)
+    // Katılım/Kaçırma (backend entegrasyonu)
     if (action == NotificationActionType.attended ||
         action == NotificationActionType.missed) {
       debugPrint(
         'Attendance action: $action for session: ${payload['sessionId']}',
       );
-      // TODO: Backend ack / yoklama entegrasyonu
+
+      // Backend'e notification action bilgisini gönder
+      try {
+        final sessionId = payload['sessionId'] as String?;
+        if (sessionId != null) {
+          // AttendanceApiService'i kullanarak backend entegrasyonu
+          // Bu import edilmeli ve dependency injection yapılmalı
+          // await _attendanceApiService.syncNotificationAction(
+          //   reminderId: reminderId,
+          //   actionType: action,
+          //   sessionId: sessionId,
+          //   metadata: payload,
+          // );
+        }
+      } catch (e) {
+        debugPrint('Backend sync failed for notification action: $e');
+        // Hata olursa sadece log et, yerel işlemi engelleme
+      }
     }
   }
 
@@ -481,12 +499,21 @@ class NotificationService {
       category: AndroidNotificationCategory.reminder,
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    // iOS category - choose based on available actions
+    String iosCategoryId = 'ATTENDANCE_CATEGORY';
+    if (androidActions != null &&
+        androidActions.any(
+          (a) => a.id.contains('snooze30') || a.id.contains('snooze2h'),
+        )) {
+      iosCategoryId = 'SNOOZE_CATEGORY';
+    }
+
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
       interruptionLevel: InterruptionLevel.active,
-      categoryIdentifier: 'ATTENDKAL_CATEGORY',
+      categoryIdentifier: iosCategoryId,
     );
 
     final details = NotificationDetails(

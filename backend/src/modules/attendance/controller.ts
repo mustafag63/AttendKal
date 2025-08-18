@@ -136,3 +136,36 @@ export const getAttendance = asyncHandler(
         });
     }
 );
+
+export const logNotificationAction = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        const userId = req.user?.id;
+        const { reminderId, actionType, sessionId, timestamp, metadata } = req.body;
+
+        if (!userId) {
+            throw new AppError('User not authenticated', 401);
+        }
+
+        // Log notification action for analytics and debugging
+        // This could be stored in a separate notification_actions table
+        console.log('Notification action received:', {
+            userId,
+            reminderId,
+            actionType,
+            sessionId,
+            timestamp,
+            metadata,
+        });
+
+        // For now, just acknowledge receipt
+        // In the future, this could:
+        // 1. Store in database for analytics
+        // 2. Trigger additional workflows
+        // 3. Update attendance automatically based on action
+
+        res.json({
+            success: true,
+            message: 'Notification action logged successfully',
+        });
+    }
+);

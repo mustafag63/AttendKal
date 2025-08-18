@@ -1,4 +1,4 @@
 // Users module routes and controllers
-// TODO: Implement user management routes (profile, settings)
+import userRoutes from './routes';
 
-export { };
+export { userRoutes };

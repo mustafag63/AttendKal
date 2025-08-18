@@ -19,3 +19,8 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+// android/build.gradle.kts  (root)
+plugins {
+    // varsa diğerleri (ör. com.android.application) apply(false) ile burada olabilir
+    id("com.google.gms.google-services") version "4.4.2" apply false
+}
