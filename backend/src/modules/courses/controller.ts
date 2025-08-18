@@ -6,7 +6,7 @@ import {
     CreateCourseInput,
     UpdateCourseInput,
     CreateMeetingInput,
-    CreateSessionInput
+    // CreateSessionInput  // kullanılmıyor → sildik
 } from '@src/lib/courseValidations';
 
 // Helper function to calculate end time
@@ -17,7 +17,16 @@ const calculateEndTime = (startTime: string, durationMinutes: number): string =>
 
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
 
-    return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+    const hh = endDate.getHours().toString().padStart(2, '0');
+    const mm = endDate.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+};
+
+// (Opsiyonel) iki HH:mm arasındaki dakika farkını hesaplamak için
+const diffMinutes = (start: string, end: string) => {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return eh * 60 + em - (sh * 60 + sm);
 };
 
 // Course Controllers
@@ -248,7 +257,7 @@ export const createMeeting = asyncHandler(
     async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         const userId = req.user?.id;
         const { id: courseId } = req.params;
-        const meetingData = req.body as CreateMeetingInput;
+        const meetingData = req.body as CreateMeetingInput; // artık { weekday, startTime, endTime, ... }
 
         if (!userId) {
             throw new AppError('User not authenticated', 401);
@@ -263,13 +272,20 @@ export const createMeeting = asyncHandler(
             throw new AppError('Course not found', 404);
         }
 
+        // 'HH:mm' inputlarıyla çalış: endTime yoksa 90 dk varsayalım
+        const start = meetingData.startTime ?? '09:00';
+        const end = meetingData.endTime ?? calculateEndTime(start, 90);
+
+        // Eğer Prisma Meeting modelinde durationMinutes kolonu VARSA aşağıdaki satırı ekleyebilirsin:
+        // const durationMinutes = diffMinutes(start, end);
+
         const meeting = await prisma.meeting.create({
             data: {
                 courseId,
                 weekday: meetingData.weekday,
-                startTime: meetingData.startHHmm || '09:00',
-                endTime: calculateEndTime(meetingData.startHHmm || '09:00', meetingData.durationMin || 90),
-                durationMinutes: meetingData.durationMin || 90,
+                startTime: start,
+                endTime: end,
+                // durationMinutes, // ← şemanda varsa aç
                 location: meetingData.location,
                 note: meetingData.note,
             },

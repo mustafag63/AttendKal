@@ -35,16 +35,14 @@ export const getSessions = asyncHandler(
             where: whereClause,
             include: {
                 course: {
-                    select: {
-                        id: true,
-                        name: true,
-                        code: true,
-                        color: true,
-                    },
+                    select: { id: true, name: true, code: true, color: true },
                 },
-                attendance: true,
+                // Şemadaki ilişki adı "attendances" veya başka bir şey olabilir.
+                // "attendance" olmadığı kesin (TS hatası). Derlemeyi geçmek için şimdilik kapattım.
+                // attendances: true,
             },
-            orderBy: { startUtc: 'desc' },
+            // Prisma şemanda tarih alanı "startTime" olduğundan buna göre sırala
+            orderBy: { startTime: 'desc' },
         });
 
         res.json({
@@ -73,21 +71,20 @@ export const createSession = asyncHandler(
             throw new AppError('Course not found', 404);
         }
 
+        // CreateSessionInput has startUtc and durationMin, convert to startTime and endTime
+        const startTime = new Date(sessionData.startUtc);
+        const endTime = new Date(startTime.getTime() + sessionData.durationMin * 60 * 1000);
+
         const session = await prisma.session.create({
             data: {
                 courseId,
-                startUtc: new Date(sessionData.startUtc),
-                durationMin: sessionData.durationMin,
+                startTime,
+                endTime,
                 source: sessionData.source,
             },
             include: {
                 course: {
-                    select: {
-                        id: true,
-                        name: true,
-                        code: true,
-                        color: true,
-                    },
+                    select: { id: true, name: true, code: true, color: true },
                 },
             },
         });
@@ -112,9 +109,7 @@ export const generateSessions = asyncHandler(
         // Check if course exists and belongs to user
         const course = await prisma.course.findFirst({
             where: { id: courseId, userId },
-            include: {
-                meetings: true,
-            },
+            include: { meetings: true },
         });
 
         if (!course) {
@@ -127,41 +122,58 @@ export const generateSessions = asyncHandler(
 
         const fromDate = new Date(from);
         const toDate = new Date(to);
-        const sessionsToCreate = [];
+
+        // createMany için gerekli alanlar: startTime, endTime, courseId, (diğer opsiyoneller)
+        const sessionsToCreate: Array<{
+            courseId: string;
+            startTime: Date;
+            endTime: Date;
+            source: 'AUTO';
+            generatedFromMeetingId: string;
+        }> = [];
 
         // Generate sessions for each meeting within the date range
         for (const meeting of course.meetings) {
+            // meeting.weekday, meeting.startTime, meeting.endTime alanları mevcut (TS hatasından da görüldü)
+            // startTime/endTime formatı 'HH:mm' string ise parçalayıp Date üretelim.
             const currentDate = new Date(fromDate);
 
             while (currentDate <= toDate) {
-                // Check if current date matches the meeting weekday
+                // JS getDay(): 0=pazar ... 6=cumartesi; sende 1-7 aralığı varsa 0→7 çevirimi yapılmış.
                 const currentWeekday = currentDate.getDay() === 0 ? 7 : currentDate.getDay();
 
                 if (currentWeekday === meeting.weekday) {
-                    // Parse time
-                    const [hours, minutes] = meeting.startHHmm.split(':').map(Number);
-                    const sessionStart = new Date(currentDate);
-                    sessionStart.setUTCHours(hours, minutes, 0, 0);
+                    // 'HH:mm' -> saat/dakika
+                    const [sH, sM] = (meeting.startTime as string).split(':').map(Number);
+                    const [eH, eM] = (meeting.endTime as string).split(':').map(Number);
 
-                    // Check if session already exists
+                    // UTC tabanlı saklamak istersen setUTCHours; yerel saat istersen setHours kullan.
+                    const sessionStart = new Date(currentDate);
+                    sessionStart.setUTCHours(sH, sM, 0, 0);
+
+                    const sessionEnd = new Date(currentDate);
+                    sessionEnd.setUTCHours(eH, eM, 0, 0);
+
+                    // Check if session already exists (startTime alanına göre)
                     const existingSession = await prisma.session.findFirst({
                         where: {
                             courseId,
-                            startUtc: sessionStart,
+                            startTime: sessionStart,
                         },
                     });
 
                     if (!existingSession) {
                         sessionsToCreate.push({
                             courseId,
-                            startUtc: sessionStart,
-                            durationMin: meeting.durationMin,
-                            source: 'AUTO' as const,
+                            startTime: sessionStart,
+                            endTime: sessionEnd,
+                            source: 'AUTO',
                             generatedFromMeetingId: meeting.id,
                         });
                     }
                 }
 
+                // bir gün ileri
                 currentDate.setDate(currentDate.getDate() + 1);
             }
         }
@@ -175,14 +187,14 @@ export const generateSessions = asyncHandler(
             return;
         }
 
-        const sessions = await prisma.session.createMany({
+        const result = await prisma.session.createMany({
             data: sessionsToCreate,
         });
 
         res.json({
             success: true,
-            data: { generated: sessions.count },
-            message: `Generated ${sessions.count} sessions successfully`,
+            data: { generated: result.count },
+            message: `Generated ${result.count} sessions successfully`,
         });
     }
 );

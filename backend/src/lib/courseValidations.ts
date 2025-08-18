@@ -1,6 +1,19 @@
 import { z } from 'zod';
 
-// Course validation schemas
+/* ---------- Helpers ---------- */
+
+const isoDateTime = z
+    .string()
+    .datetime('Invalid datetime format'); // RFC 3339 (Zod'un yerleşik kontrolü)
+
+const uuid = z.string().uuid('Invalid UUID');
+
+const hhmm = z
+    .string()
+    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)');
+
+/* ---------- Course ---------- */
+
 export const createCourseSchema = z.object({
     name: z.string().min(1, 'Course name is required').max(100, 'Course name too long'),
     code: z.string().max(20, 'Course code too long').optional(),
@@ -13,43 +26,51 @@ export const createCourseSchema = z.object({
 
 export const updateCourseSchema = createCourseSchema.partial();
 
-// Meeting validation schemas
+/* ---------- Meeting (FIX: startTime / endTime) ---------- */
+/* Prisma şemana uyum: startHHmm + durationMin yerine startTime + endTime ('HH:mm') */
+
 export const createMeetingSchema = z.object({
     weekday: z.number().int().min(1, 'Weekday must be 1-7').max(7, 'Weekday must be 1-7'),
-    startHHmm: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
-    durationMin: z.number().int().min(15, 'Minimum duration is 15 minutes').max(480, 'Maximum duration is 8 hours').default(90),
+    startTime: hhmm, // e.g. "09:30"
+    endTime: hhmm,   // e.g. "11:00"
     location: z.string().max(100, 'Location too long').optional(),
     note: z.string().max(500, 'Note too long').optional(),
 });
 
-// Session validation schemas
+export const updateMeetingSchema = createMeetingSchema.partial();
+
+/* ---------- Session ---------- */
+/* Controller input: startUtc + durationMin → controller içinde startTime/endTime hesaplanıyor */
+
 export const createSessionSchema = z.object({
-    startUtc: z.string().datetime('Invalid datetime format'), // Keep as startUtc for API compatibility
-    durationMin: z.number().int().min(15, 'Minimum duration is 15 minutes').max(480, 'Maximum duration is 8 hours').default(90),
+    startUtc: isoDateTime,
+    durationMin: z.number().int().min(15, 'Minimum duration is 15 minutes').max(480, 'Maximum 8 hours').default(90),
     source: z.enum(['AUTO', 'MANUAL']).default('MANUAL'),
 });
 
 export const generateSessionsSchema = z.object({
-    courseId: z.string().uuid('Invalid course ID'),
-    from: z.string().datetime('Invalid from date'),
-    to: z.string().datetime('Invalid to date'),
+    courseId: uuid,
+    from: isoDateTime,
+    to: isoDateTime,
 });
 
 export const getSessionsSchema = z.object({
-    from: z.string().datetime('Invalid from date').optional(),
-    to: z.string().datetime('Invalid to date').optional(),
-    courseId: z.string().uuid('Invalid course ID').optional(),
+    from: isoDateTime.optional(),
+    to: isoDateTime.optional(),
+    courseId: uuid.optional(),
 });
 
-// Attendance validation schemas
+/* ---------- Attendance ---------- */
+
 export const markAttendanceSchema = z.object({
     status: z.enum(['PRESENT', 'ABSENT', 'EXCUSED']),
     note: z.string().max(500, 'Note too long').optional(),
 });
 
-// Reminder validation schemas
+/* ---------- Reminder ---------- */
+
 export const createReminderSchema = z.object({
-    courseId: z.string().uuid('Invalid course ID').optional(),
+    courseId: uuid.optional(),
     title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
     morningOfClass: z.boolean().default(true),
     minutesBefore: z.number().int().min(0, 'Minutes before must be non-negative').max(1440, 'Maximum 24 hours before').default(60),
@@ -60,10 +81,12 @@ export const createReminderSchema = z.object({
 
 export const updateReminderSchema = createReminderSchema.partial();
 
-// Type exports
+/* ---------- Types ---------- */
+
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;
 export type UpdateCourseInput = z.infer<typeof updateCourseSchema>;
 export type CreateMeetingInput = z.infer<typeof createMeetingSchema>;
+export type UpdateMeetingInput = z.infer<typeof updateMeetingSchema>;
 export type CreateSessionInput = z.infer<typeof createSessionSchema>;
 export type GenerateSessionsInput = z.infer<typeof generateSessionsSchema>;
 export type GetSessionsInput = z.infer<typeof getSessionsSchema>;
